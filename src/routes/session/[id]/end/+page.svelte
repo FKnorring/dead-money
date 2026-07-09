@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { calculateNet, calculateSettlement, formatAmount, netClass as getNetClass, netSign as getNetSign } from '$lib';
 	import { buildSwishLink, updatePlayerSwish } from '$lib';
+	import { calculateAwards } from '$lib';
 	import { getMyPlayerId } from '$lib';
 	import { useSessionSync } from '$lib';
 	import { Sheet } from '$lib';
 	import type { SeatWithPlayer } from '$lib';
-	import type { Transfer } from '$lib';
+	import type { Transfer, Award } from '$lib';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -16,6 +17,10 @@
 	let seats = $state<SeatWithPlayer[]>([...data.seats]);
 	// eslint-disable-next-line svelte/reactivity -- initial server data; updated via Realtime
 	let buyInTotals = $state<Record<string, number>>({ ...data.buyInTotals });
+	// eslint-disable-next-line svelte/reactivity -- static at load time; stack history does not change after session close
+	const stackLows: Record<string, number> = { ...data.stackLows };
+	// eslint-disable-next-line svelte/reactivity -- static at load time
+	const buyInCounts: Record<string, number> = { ...data.buyInCounts };
 
 	let myPlayerId = $state<string | null>(null);
 
@@ -67,6 +72,25 @@
 			};
 		});
 	});
+
+	// ── Awards ────────────────────────────────────────────────────────────────
+
+	const awards = $derived<Award[]>(
+		seatResults.length >= 2
+			? calculateAwards(
+					seatResults.map(({ seat, net, totalBuyIns }) => ({
+						name: seat.players.name,
+						net,
+						totalBuyIns,
+						finalStack: seat.final_stack,
+						buyInCount: buyInCounts[seat.player_id] ?? 1,
+						buyInAmount: session.buy_in_amount,
+						cashedOutAt: seat.cashed_out_at,
+						stackLow: stackLows[seat.player_id] ?? null,
+					}))
+				)
+			: []
+	);
 
 	// ── Drama: biggest winner and biggest loser ───────────────────────────────
 
@@ -244,6 +268,44 @@
 			<p class="text-text-muted text-sm text-center py-4">Everyone broke even — no transfers needed.</p>
 		{/if}
 
+		<!-- ── Awards ──────────────────────────────────────────────────────── -->
+		{#if awards.length > 0}
+			<div class="flex items-center gap-3">
+				<div class="flex-1 border-t border-border"></div>
+				<span class="text-text-muted text-base leading-none">♣ ♦ ♥ ♠</span>
+				<div class="flex-1 border-t border-border"></div>
+			</div>
+
+			<section>
+				<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest mb-3">
+					Awards
+				</h2>
+				<div class="flex flex-col gap-3">
+					{#each awards as award, i (award.id + award.recipientName)}
+						<div
+							class="award-card bg-surface rounded-card p-4 flex flex-col gap-2 border border-border"
+							style="animation-delay: {i * 120}ms"
+						>
+							<div class="flex items-start justify-between gap-3">
+								<h3 class="font-display text-2xl tracking-wider leading-none text-gold-light">
+									{award.title}
+								</h3>
+								<span class="tabular text-xs text-text-muted font-medium shrink-0 mt-1">
+									{award.stat}
+								</span>
+							</div>
+							<p class="text-text font-semibold text-sm leading-snug">
+								{award.recipientName}
+							</p>
+							<p class="text-text-muted text-xs leading-relaxed">
+								{award.description}
+							</p>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{/if}
+
 		<!-- ── Add Swish number nudge ──────────────────────────────────────── -->
 		{#if mySwishNudge}
 			<div class="bg-surface-high rounded-card p-4 flex flex-col gap-2 border border-border">
@@ -310,5 +372,17 @@
 	.result-row {
 		opacity: 0;
 		animation: slam-in 350ms var(--ease-out-back, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
+	}
+
+	/* Award cards: dramatic reveal from below with a slight overshoot */
+	@keyframes award-reveal {
+		0%   { opacity: 0; transform: translateY(20px) scale(0.95); }
+		55%  { opacity: 1; transform: translateY(-3px) scale(1.01); }
+		100% { opacity: 1; transform: translateY(0) scale(1); }
+	}
+
+	.award-card {
+		opacity: 0;
+		animation: award-reveal 450ms var(--ease-out-back, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
 	}
 </style>

@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { loadSession, loadSeats, loadBuyInTotals } from '$lib';
+import { loadSession, loadSeats, loadBuyInTotals, loadBuyInCounts, loadStackLows } from '$lib';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params }) => {
@@ -7,10 +7,12 @@ export const load: PageLoad = async ({ params }) => {
 
 	if (!session) error(404, 'Session not found');
 
-	const [seats, buyInTotals] = await Promise.all([
+	const [seats, buyInTotals, buyInCounts, stackLows] = await Promise.all([
 		loadSeats(params.id),
 		loadBuyInTotals(params.id),
+		loadBuyInCounts(params.id),
+		loadStackLows(params.id),
 	]);
 
-	return { session, seats, buyInTotals };
+	return { session, seats, buyInTotals, buyInCounts, stackLows };
 };

@@ -356,6 +356,29 @@ export function buildSwishLink({
 }
 
 /**
+ * Load the lowest stack each player reached during a session, derived from
+ * stack_events snapshots. Used for the biggest-comeback award.
+ * Returns a Record<playerId, minStack>.
+ */
+export async function loadStackLows(sessionId: string): Promise<Record<string, number>> {
+	const { data, error } = await supabase
+		.from('stack_events')
+		.select('player_id, amount')
+		.eq('session_id', sessionId)
+		.eq('type', 'snapshot');
+
+	if (error) throw error;
+
+	const lows: Record<string, number> = {};
+	for (const row of data ?? []) {
+		if (lows[row.player_id] === undefined || row.amount < lows[row.player_id]) {
+			lows[row.player_id] = row.amount;
+		}
+	}
+	return lows;
+}
+
+/**
  * Load total buy-ins per player for a session.
  * Returns a Record<playerId, totalKr>.
  */
@@ -372,4 +395,23 @@ export async function loadBuyInTotals(sessionId: string): Promise<Record<string,
 		totals[row.player_id] = (totals[row.player_id] ?? 0) + row.amount;
 	}
 	return totals;
+}
+
+/**
+ * Load the number of buy-in events per player for a session.
+ * Returns a Record<playerId, count>.
+ */
+export async function loadBuyInCounts(sessionId: string): Promise<Record<string, number>> {
+	const { data, error } = await supabase
+		.from('buy_ins')
+		.select('player_id')
+		.eq('session_id', sessionId);
+
+	if (error) throw error;
+
+	const counts: Record<string, number> = {};
+	for (const row of data ?? []) {
+		counts[row.player_id] = (counts[row.player_id] ?? 0) + 1;
+	}
+	return counts;
 }

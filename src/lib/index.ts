@@ -10,9 +10,11 @@ export { default as Sheet } from './components/ui/Sheet.svelte';
 // Domain utilities
 export { calculateSettlement } from './settlement';
 export { calculateNet } from './net';
+export { calculateAwards } from './awards';
 export { krToBb, bbToKr, bbSizeKr, formatAmount, netClass, netSign } from './chips';
 export type { SeatResult, Transfer } from './settlement';
 export type { NetInput } from './net';
+export type { AwardInput, Award } from './awards';
 
 // Identity (ADR-0001, ADR-0002)
 export { getMyPlayerId, isHost, setMyPlayerId, setHost, clearIdentity } from './identity';
@@ -41,6 +43,8 @@ export {
 	recordBuyIn,
 	updateStack,
 	loadBuyInTotals,
+	loadBuyInCounts,
+	loadStackLows,
 	updatePlayerSwish,
 	buildSwishLink,
 } from './session';
