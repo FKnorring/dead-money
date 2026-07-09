@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { netClass as getNetClass, netSign as getNetSign } from '$lib/chips';
 
 	interface Props {
 		name: string;
@@ -12,8 +13,8 @@
 
 	let { name, totalBuyIns, stack, net, isYou = false, trailing }: Props = $props();
 
-	const netClass = $derived(net > 0 ? 'net-positive' : net < 0 ? 'net-negative' : 'net-zero');
-	const netSign = $derived(net > 0 ? '+' : '');
+	const netCls = $derived(getNetClass(net));
+	const netPfx = $derived(getNetSign(net));
 </script>
 
 <div
@@ -33,8 +34,8 @@
 			<span class="tabular text-sm text-text-muted">
 				{stack !== null ? `${stack} kr` : '—'}
 			</span>
-			<span class={['tabular text-sm font-semibold', netClass]}>
-				{netSign}{net} kr
+			<span class={['tabular text-sm font-semibold', netCls]}>
+				{netPfx}{net} kr
 			</span>
 		</div>
 		{#if trailing}

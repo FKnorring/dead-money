@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { supabase, loadBuyInTotals } from '$lib';
-	import type { Seat } from '$lib';
+	import { supabase, loadBuyInTotals, loadSeats } from '$lib';
+	import { getMyPlayerId, isHost as getIsHost } from '$lib';
+	import { useSessionSync } from '$lib';
+	import type { SeatWithPlayer } from '$lib';
 	import type { PageData } from './$types';
 	import MySession from './MySession.svelte';
 	import TheTable from './TheTable.svelte';
@@ -13,7 +15,7 @@
 	// eslint-disable-next-line svelte/reactivity -- initial server data; updated via Realtime
 	let session = $state({ ...data.session });
 	// eslint-disable-next-line svelte/reactivity -- initial server data; updated via Realtime
-	let seats = $state<Seat[]>([...data.seats]);
+	let seats = $state<SeatWithPlayer[]>([...data.seats]);
 	// eslint-disable-next-line svelte/reactivity -- initial server data; updated via Realtime
 	let buyInTotals = $state<Record<string, number>>({ ...data.buyInTotals });
 
@@ -40,8 +42,8 @@
 	// ── Init from localStorage ─────────────────────────────────────────────────
 
 	$effect(() => {
-		isHost = localStorage.getItem(`host_token_${session.id}`) === 'true';
-		myPlayerId = localStorage.getItem(`player_id_${session.id}`);
+		isHost = getIsHost(session.id);
+		myPlayerId = getMyPlayerId(session.id);
 		managedPlayerId = myPlayerId;
 
 		const stored = localStorage.getItem('display_unit');
@@ -51,21 +53,7 @@
 	// ── Realtime subscriptions ─────────────────────────────────────────────────
 
 	$effect(() => {
-		const seatsChannel = supabase
-			.channel(`play:seats:${session.id}`)
-			.on(
-				'postgres_changes',
-				{ event: '*', schema: 'public', table: 'seats', filter: `session_id=eq.${session.id}` },
-				async () => {
-					const { data: fresh } = await supabase
-						.from('seats')
-						.select('*, players(id, name, swish_number)')
-						.eq('session_id', session.id)
-						.order('joined_at');
-					if (fresh) seats = fresh as Seat[];
-				}
-			)
-			.subscribe();
+		const sync = useSessionSync(session.id, seats, (fresh) => { seats = fresh; });
 
 		const buyInsChannel = supabase
 			.channel(`play:buy_ins:${session.id}`)
@@ -94,7 +82,7 @@
 			.subscribe();
 
 		return () => {
-			supabase.removeChannel(seatsChannel);
+			sync.destroy();
 			supabase.removeChannel(buyInsChannel);
 			supabase.removeChannel(sessionChannel);
 		};
@@ -110,20 +98,12 @@
 	/** Re-fetch everything after a stack/buy-in mutation */
 	async function handleChange() {
 		const [freshSeats, freshTotals] = await Promise.all([
-			supabase
-				.from('seats')
-				.select('*, players(id, name, swish_number)')
-				.eq('session_id', session.id)
-				.order('joined_at'),
+			loadSeats(session.id),
 			loadBuyInTotals(session.id),
 		]);
-		if (freshSeats.data) seats = freshSeats.data as Seat[];
+		seats = freshSeats;
 		buyInTotals = freshTotals;
 	}
-
-	// Typed-cast for component props — we load with the player join
-	type SeatWithPlayer = Seat & { players: { id: string; name: string; swish_number: string | null } };
-	const seatsWithPlayer = $derived(seats as SeatWithPlayer[]);
 </script>
 
 <div class="min-h-dvh bg-bg text-text flex flex-col max-w-md mx-auto">
@@ -156,7 +136,7 @@
 	{#if isHost && activeTab === 'my-session'}
 		<div class="bg-surface-high border-b border-border px-5 py-2 flex items-center gap-2 shrink-0 overflow-x-auto">
 			<span class="text-text-muted text-xs shrink-0">Managing:</span>
-			{#each seatsWithPlayer.filter(s => !s.cashed_out) as s (s.id)}
+			{#each seats.filter(s => !s.cashed_out) as s (s.id)}
 				<button
 					onclick={() => { managedPlayerId = s.player_id; }}
 					class={[
@@ -179,7 +159,7 @@
 			{#if managedSeat}
 				<MySession
 					{session}
-					seat={managedSeat as SeatWithPlayer}
+					seat={managedSeat}
 					totalBuyIns={buyInTotals[managedSeat.player_id] ?? 0}
 					{displayUnit}
 					onStackChange={handleChange}
@@ -193,7 +173,7 @@
 		{:else}
 			<TheTable
 				{session}
-				seats={seatsWithPlayer}
+				seats={seats}
 				{buyInTotals}
 				{myPlayerId}
 				{isHost}

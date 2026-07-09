@@ -10,10 +10,16 @@ export { default as Sheet } from './components/ui/Sheet.svelte';
 // Domain utilities
 export { calculateSettlement } from './settlement';
 export { calculateNet } from './net';
-export { krToBb, bbToKr } from './chips';
+export { krToBb, bbToKr, bbSizeKr, formatAmount, netClass, netSign } from './chips';
 export type { SeatResult, Transfer } from './settlement';
 export type { NetInput } from './net';
-export type { SessionConfig } from './chips';
+
+// Identity (ADR-0001, ADR-0002)
+export { getMyPlayerId, isHost, setMyPlayerId, setHost, clearIdentity } from './identity';
+
+// Realtime seat sync
+export { useSessionSync } from './sessionSync';
+export type { SessionSync } from './sessionSync';
 
 // Supabase client + types
 export { supabase } from './supabaseClient';
@@ -34,4 +40,4 @@ export {
 	updateStack,
 	loadBuyInTotals
 } from './session';
-export type { Session, Player, Seat, BuyIn, StackEvent } from './session';
+export type { Session, Player, Seat, SeatWithPlayer, BuyIn, StackEvent } from './session';

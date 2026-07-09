@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { ChipButton, Sheet, NumberInput } from '$lib';
 	import { recordBuyIn, updateStack } from '$lib';
-	import { calculateNet } from '$lib';
-	import type { Seat, Session } from '$lib';
+	import { calculateNet, formatAmount, netClass as getNetClass, netSign as getNetSign } from '$lib';
+	import type { Session, SeatWithPlayer } from '$lib';
 
 	interface Props {
 		session: Session;
 		/** The seat being managed (own seat, or a seat the host chose) */
-		seat: Seat & { players: { id: string; name: string; swish_number: string | null } };
+		seat: SeatWithPlayer;
 		totalBuyIns: number;
 		displayUnit: 'kr' | 'bb';
 		/** Called when the seat's stack changes so the parent can update its state */
@@ -16,8 +16,8 @@
 
 	let { session, seat, totalBuyIns, displayUnit, onStackChange }: Props = $props();
 
-	const bbSize = $derived(session.bb_size);
 	const buyIn = $derived(session.buy_in_amount);
+	const bbSize = $derived(session.bb_size);
 
 	// ── Buy-in chip amounts ───────────────────────────────────────────────────
 
@@ -53,15 +53,11 @@
 
 	const stack = $derived(seat.stack);
 	const net = $derived(calculateNet({ totalBuyIns, finalStack: stack }));
-	const netClass = $derived(net > 0 ? 'net-positive' : net < 0 ? 'net-negative' : 'net-zero');
-	const netSign = $derived(net > 0 ? '+' : '');
+	const netCls = $derived(getNetClass(net));
+	const netPfx = $derived(getNetSign(net));
 
-	function formatAmount(kr: number): string {
-		if (displayUnit === 'bb') {
-			const bb = kr / bbSize;
-			return `${bb % 1 === 0 ? bb.toFixed(0) : bb.toFixed(1)} BB`;
-		}
-		return `${kr} kr`;
+	function fmt(kr: number): string {
+		return fmt(kr, displayUnit, session);
 	}
 
 	// ── Expanded rows ─────────────────────────────────────────────────────────
@@ -142,18 +138,18 @@
 			<span class="text-text-muted text-sm">Stack</span>
 			{#key stack}
 			<span class="tabular text-3xl font-semibold text-text stack-value">
-				{stack !== null ? formatAmount(stack) : '—'}
+				{stack !== null ? fmt(stack) : '—'}
 			</span>
 		{/key}
 		</div>
 		<div class="flex items-center justify-between gap-3 text-sm">
 			<span class="text-text-muted">Bought in</span>
-			<span class="tabular text-text">{formatAmount(totalBuyIns)}</span>
+			<span class="tabular text-text">{fmt(totalBuyIns)}</span>
 		</div>
 		<div class="flex items-center justify-between gap-3 text-sm border-t border-border pt-3">
 			<span class="text-text-muted">Net</span>
-			<span class={['tabular font-semibold', netClass]}>
-				{netSign}{formatAmount(net)}
+			<span class={['tabular font-semibold', netCls]}>
+				{netPfx}{fmt(net)}
 			</span>
 		</div>
 	</section>

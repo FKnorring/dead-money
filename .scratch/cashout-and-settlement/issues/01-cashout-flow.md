@@ -2,6 +2,12 @@
 
 Status: ready-for-agent
 
+## Prerequisites already in place
+
+- `SeatWithPlayer` is now a single exported type from `src/lib/session.ts` — no inline redeclarations needed.
+- `cashOutSeat` should emit a `stack_events` row with `type='cash_out'`. The `emitStackSnapshot` helper in `session.ts` currently only emits `type='snapshot'` — a separate `emitCashOutEvent` call (or a parameter on `emitStackSnapshot`) is needed.
+- The "Cash Out" button in `TheTable.svelte` currently navigates to `/session/${session.id}/cashout/${seat.id}`. Per the current design, this should instead open a Sheet inline (no separate route needed). Update `TheTable.svelte` to open a sheet directly.
+
 Add the ability for a player to cash out and a host to cash out any player.
 
 **`cashOutSeat({ seatId, finalStack })`** in `session.ts`:

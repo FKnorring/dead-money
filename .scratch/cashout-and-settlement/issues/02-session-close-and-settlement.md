@@ -2,6 +2,15 @@
 
 Status: ready-for-agent
 
+## Prerequisites already in place
+
+- `calculateSettlement` in `src/lib/settlement.ts` is fully implemented and tested — it is the authoritative settlement algorithm.
+- `calculateNet` in `src/lib/net.ts` is the authoritative net formula — use it for every per-seat net calculation on the settlement screen.
+- `useSessionSync` (`src/lib/sessionSync.ts`) should be used by the `/session/[id]/end` route to keep the seat list live. The route only needs to subscribe; it never needs to handle a redirect (the session is already closed).
+- `formatAmount` and `netClass`/`netSign` from `src/lib/chips.ts` are the canonical display helpers — use them on the settlement screen.
+- The lobby page session-state Realtime handler currently redirects to `/session/${id}/play` on `active` and does nothing on `closed`. Add a redirect to `/session/${id}/end` when `state === 'closed'`.
+- The play page session-state Realtime handler currently redirects to `/session/${id}` (lobby) when state is not `active`. Change this to redirect to `/session/${id}/end` when `state === 'closed'` (and keep the lobby fallback for any other unexpected state).
+
 **`closeSession(sessionId)`** in `session.ts`:
 - Updates `sessions`: `state='closed'`, `closed_at=now()`
 

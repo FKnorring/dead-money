@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { supabase, Button, Card, Badge, Sheet, NumberInput } from '$lib';
 	import { claimSeat, upsertSeat, removeSeat, startSession, searchPlayers, findOrCreatePlayer } from '$lib';
+	import { getMyPlayerId, isHost as getIsHost, setMyPlayerId } from '$lib';
+	import { useSessionSync } from '$lib';
 	import type { Seat, Player } from '$lib';
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
@@ -42,31 +44,16 @@
 	// ── Init from localStorage ───────────────────────────────────────────────────
 
 	$effect(() => {
-		isHost = localStorage.getItem(`host_token_${session.id}`) === 'true';
-		myPlayerId = localStorage.getItem(`player_id_${session.id}`);
+		isHost = getIsHost(session.id);
+		myPlayerId = getMyPlayerId(session.id);
 	});
 
 	// ── Realtime seats subscription ──────────────────────────────────────────────
 
 	$effect(() => {
-		const channel = supabase
-			.channel(`seats:${session.id}`)
-			.on(
-				'postgres_changes',
-				{ event: '*', schema: 'public', table: 'seats', filter: `session_id=eq.${session.id}` },
-				async () => {
-					// Re-fetch seats with player join on any change
-					const { data: fresh } = await supabase
-						.from('seats')
-						.select('*, players(id, name, swish_number)')
-						.eq('session_id', session.id)
-						.order('joined_at');
-					if (fresh) seats = fresh as Seat[];
-				}
-			)
-			.subscribe();
+		const sync = useSessionSync(session.id, seats, (fresh) => { seats = fresh; });
 
-		// Also subscribe to session state changes (e.g. host starts game)
+		// Subscribe to session state changes (e.g. host starts game)
 		const sessionChannel = supabase
 			.channel(`session:${session.id}`)
 			.on(
@@ -82,7 +69,7 @@
 			.subscribe();
 
 		return () => {
-			supabase.removeChannel(channel);
+			sync.destroy();
 			supabase.removeChannel(sessionChannel);
 		};
 	});
@@ -108,7 +95,7 @@
 		joinError = '';
 		try {
 			await claimSeat(seat.id);
-			localStorage.setItem(`player_id_${session.id}`, seat.player_id);
+			setMyPlayerId(session.id, seat.player_id);
 			myPlayerId = seat.player_id;
 		} catch (e) {
 			joinError = e instanceof Error ? e.message : 'Failed to claim seat';
@@ -124,7 +111,7 @@
 		try {
 			const player = selectedPlayer ?? await findOrCreatePlayer(searchQuery.trim());
 			await upsertSeat({ sessionId: session.id, playerId: player.id, claimed: true });
-			localStorage.setItem(`player_id_${session.id}`, player.id);
+			setMyPlayerId(session.id, player.id);
 			myPlayerId = player.id;
 		} catch (e) {
 			joinError = e instanceof Error ? e.message : 'Failed to join';

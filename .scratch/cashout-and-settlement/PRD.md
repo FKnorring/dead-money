@@ -72,6 +72,20 @@ A two-part flow:
 - **CashOut mutation** (`cashOutSeat`) follows the same pattern as `claimSeat` — a single DB update. Test manually via the UI.
 - **Swish link construction** is a pure string function — add a unit test: `buildSwishLink({ swishNumber, amount, date }) → string`.
 
+## Architecture foundations in place (do not re-implement)
+
+The following modules were built as part of the architecture refactor (2026-07-09) and are ready to use:
+
+| What | Where | Notes |
+|---|---|---|
+| `SeatWithPlayer` type | `src/lib/session.ts` | Single exported type; import from `$lib`, never re-declare inline |
+| `calculateNet` | `src/lib/net.ts` | Authoritative net formula |
+| `calculateSettlement` | `src/lib/settlement.ts` | Fully implemented and tested |
+| `formatAmount`, `netClass`, `netSign` | `src/lib/chips.ts` | Canonical display helpers; no inline `kr / bbSize` |
+| `useSessionSync` | `src/lib/sessionSync.ts` | Use for the `/end` route's seat subscription |
+| Identity helpers | `src/lib/identity.ts` | `getMyPlayerId`, `isHost`, `setMyPlayerId` — no direct localStorage access elsewhere |
+| Stack-seed trigger | `supabase/migrations/0002_seed_stack_on_first_buy_in.sql` | DB enforces first-buy-in stack seeding atomically |
+
 ## Out of Scope
 
 - Partial cash-outs (player leaves with some chips still in play)

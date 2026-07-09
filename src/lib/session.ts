@@ -1,9 +1,13 @@
 import { supabase } from './supabaseClient';
 import type { Tables } from './database.types';
+import { bbSizeKr } from './chips';
+import { setHost, setMyPlayerId } from './identity';
 
 export type Session = Tables<'sessions'>;
 export type Player = Tables<'players'>;
 export type Seat = Tables<'seats'> & { players: Pick<Player, 'id' | 'name' | 'swish_number'> };
+/** Seat with the player join already loaded — the shape returned by loadSeats(). */
+export type SeatWithPlayer = Seat;
 
 // ─── Session ──────────────────────────────────────────────────────────────────
 
@@ -27,7 +31,7 @@ export async function createSession({
 		.insert({
 			host_player_id: hostPlayerId,
 			buy_in_amount: buyInAmount,
-			bb_size: Math.round(buyInAmount / 100),
+			bb_size: bbSizeKr({ buy_in_amount: buyInAmount }),
 			label: label || null,
 			location: location || null,
 			state: 'lobby'
@@ -41,10 +45,8 @@ export async function createSession({
 	await upsertSeat({ sessionId: session.id, playerId: hostPlayerId, claimed: true });
 
 	// Persist host identity (ADR-0002)
-	if (typeof localStorage !== 'undefined') {
-		localStorage.setItem(`host_token_${session.id}`, 'true');
-		localStorage.setItem(`player_id_${session.id}`, hostPlayerId);
-	}
+	setHost(session.id);
+	setMyPlayerId(session.id, hostPlayerId);
 
 	return session;
 }
@@ -225,7 +227,9 @@ export async function recordBuyIn({
 	playerId: string;
 	amount: number;
 }): Promise<void> {
-	// Insert the buy-in
+	// Insert the buy-in.
+	// The DB trigger trg_seed_stack_on_first_buy_in atomically seeds seats.stack
+	// to this amount when stack is currently null (ADR-0003, migration 0002).
 	const { error: buyInError } = await supabase
 		.from('buy_ins')
 		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount });
@@ -234,24 +238,6 @@ export async function recordBuyIn({
 
 	// Write a stack_events snapshot
 	await emitStackSnapshot({ seatId, sessionId, playerId, amount });
-
-	// Seed stack to buy-in amount if it's the player's first buy-in (stack is null)
-	const { data: seat, error: seatFetchError } = await supabase
-		.from('seats')
-		.select('stack')
-		.eq('id', seatId)
-		.maybeSingle();
-
-	if (seatFetchError) throw seatFetchError;
-
-	if (seat && seat.stack === null) {
-		const { error: stackError } = await supabase
-			.from('seats')
-			.update({ stack: amount })
-			.eq('id', seatId);
-
-		if (stackError) throw stackError;
-	}
 }
 
 /**

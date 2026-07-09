@@ -2,11 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { PlayerRow } from '$lib';
 	import { calculateNet } from '$lib';
-	import type { Seat, Session } from '$lib';
-
-	interface SeatWithPlayer extends Seat {
-		players: { id: string; name: string; swish_number: string | null };
-	}
+	import type { Session, SeatWithPlayer } from '$lib';
 
 	interface Props {
 		session: Session;

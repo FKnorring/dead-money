@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { Button, Card, Sheet, NumberInput } from '$lib';
 	import { createSession, searchPlayers, findOrCreatePlayer } from '$lib';
+	import { bbSizeKr } from '$lib';
 	import type { Player } from '$lib';
 	import type { PageData } from './$types';
 
@@ -76,7 +77,7 @@
 		creating = false;
 	}
 
-	const bbSize = $derived(buyInAmount ? Math.round(buyInAmount / 100) : 2);
+	const bbSize = $derived(buyInAmount ? bbSizeKr({ buy_in_amount: buyInAmount }) : 2);
 
 	function formatDate(iso: string) {
 		return new Date(iso).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
