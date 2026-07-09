@@ -1,5 +1,4 @@
-import { loadLeaderboardData } from '$lib';
-import { buildLeaderboard } from '$lib';
+import { loadLeaderboardData, buildLeaderboard } from '$lib';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { netClass as getNetClass, netSign as getNetSign } from '$lib';
+	import { netClass as getNetClass, formatNet, formatPercent } from '$lib';
 	import type { PlayerSessionRow } from '$lib';
 	import type { PageData } from './$types';
 
@@ -14,10 +14,6 @@
 
 	// ── Formatting helpers ────────────────────────────────────────────────────
 
-	function formatNet(n: number): string {
-		return `${getNetSign(n)}${Math.abs(n)} kr`;
-	}
-
 	function formatDate(iso: string): string {
 		return new Date(iso).toLocaleDateString('sv-SE', {
 			weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
@@ -28,10 +24,6 @@
 		return new Date(iso).toLocaleDateString('sv-SE', {
 			day: 'numeric', month: 'short', year: 'numeric',
 		});
-	}
-
-	function formatPercent(rate: number): string {
-		return `${Math.round(rate * 100)}%`;
 	}
 
 	// ── Stack timeline chart ──────────────────────────────────────────────────

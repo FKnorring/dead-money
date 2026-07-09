@@ -12,7 +12,7 @@ export { calculateSettlement } from './settlement';
 export { calculateNet } from './net';
 export { calculateAwards } from './awards';
 export { buildLeaderboard } from './leaderboard';
-export { krToBb, bbToKr, bbSizeKr, formatAmount, netClass, netSign } from './chips';
+export { krToBb, bbToKr, bbSizeKr, formatAmount, netClass, netSign, formatNet, formatPercent } from './chips';
 export type { SeatResult, Transfer } from './settlement';
 export type { NetInput } from './net';
 export type { AwardInput, Award } from './awards';

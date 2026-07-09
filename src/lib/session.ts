@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 import type { Tables } from './database.types';
 import { bbSizeKr } from './chips';
 import { setHost, setMyPlayerId } from './identity';
+import { calculateNet } from './net';
 import type { LeaderboardRow } from './leaderboard';
 
 export type Session = Tables<'sessions'>;
@@ -425,11 +426,13 @@ export async function loadBuyInCounts(sessionId: string): Promise<Record<string,
  * Client-side aggregation is done by buildLeaderboard().
  */
 export async function loadLeaderboardData(): Promise<LeaderboardRow[]> {
-	// Fetch all seats for closed sessions, joined with the player name
+	// Fetch all cashed-out seats for closed sessions, joined with the player name.
+	// The cashed_out filter matches the PRD formula: only seats that locked a final stack.
 	const { data: seats, error: seatsError } = await supabase
 		.from('seats')
 		.select('id, player_id, session_id, final_stack, players(id, name), sessions!inner(state)')
-		.eq('sessions.state', 'closed');
+		.eq('sessions.state', 'closed')
+		.eq('cashed_out', true);
 
 	if (seatsError) throw seatsError;
 
@@ -499,13 +502,14 @@ export async function loadPlayerHistory(playerId: string): Promise<{
 
 	if (playerError) throw playerError;
 
-	// Load all closed sessions where the player has a seat
+	// Load all cashed-out seats for closed sessions where the player participated.
+	// No DB ordering — JS re-sorts by sessionCreatedAt (UUIDs don't sort chronologically).
 	const { data: seats, error: seatsError } = await supabase
 		.from('seats')
 		.select('session_id, final_stack, sessions!inner(id, label, created_at, closed_at, buy_in_amount, state)')
 		.eq('player_id', playerId)
 		.eq('sessions.state', 'closed')
-		.order('session_id');
+		.eq('cashed_out', true);
 
 	if (seatsError) throw seatsError;
 	if (!seats || seats.length === 0) return { player, sessions: [] };
@@ -557,7 +561,7 @@ export async function loadPlayerHistory(playerId: string): Promise<{
 			state: string;
 		};
 		const totalBuyIns = buyInTotals.get(seat.session_id) ?? 0;
-		const net = (seat.final_stack ?? 0) - totalBuyIns;
+		const net = calculateNet({ totalBuyIns, finalStack: seat.final_stack });
 		return {
 			sessionId: seat.session_id,
 			sessionLabel: session.label,

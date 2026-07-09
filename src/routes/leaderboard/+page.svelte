@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { netClass as getNetClass, netSign as getNetSign } from '$lib';
+	import { netClass as getNetClass, formatNet, formatPercent } from '$lib';
 	import type { LeaderboardEntry } from '$lib';
 	import type { PageData } from './$types';
 
@@ -9,16 +9,8 @@
 		[...data.entries].sort((a, b) => b.biggestWin - a.biggestWin)[0] ?? null
 	);
 	const topLoser = $derived(
-		[...data.entries].sort((a, b) => a.biggestLoss - b.biggestLoss)[0] ?? null
+		[...data.entries].sort((a, b) => a.worstNet - b.worstNet)[0] ?? null
 	);
-
-	function formatNet(n: number): string {
-		return `${getNetSign(n)}${Math.abs(n)} kr`;
-	}
-
-	function formatPercent(rate: number): string {
-		return `${Math.round(rate * 100)}%`;
-	}
 
 	/** Ordinal rank suffix — 1st, 2nd, 3rd, 4th… */
 	function rankLabel(i: number): string {
@@ -59,7 +51,7 @@
 					{#each data.entries as entry, i (entry.playerId)}
 						<a
 							href="/player/{entry.playerId}"
-							class="player-row flex items-center gap-4 px-4 py-3
+							class="player-row flex items-center gap-4 px-4 h-tap
 								hover:bg-surface-high transition-colors
 								{i === 0 ? 'gold-row' : ''}"
 							style="animation-delay: {i * 80}ms"
@@ -81,7 +73,13 @@
 								<span class="text-text-muted text-xs tabular">
 									{entry.sessionsPlayed} session{entry.sessionsPlayed === 1 ? '' : 's'}
 									&nbsp;·&nbsp;
-									{formatPercent(entry.winRate)} win rate
+									{formatPercent(entry.winRate)} wins
+									{#if entry.biggestWin > 0}
+										&nbsp;·&nbsp;best {formatNet(entry.biggestWin)}
+									{/if}
+									{#if entry.worstNet < 0}
+										&nbsp;·&nbsp;worst {formatNet(entry.worstNet)}
+									{/if}
 								</span>
 							</div>
 
@@ -101,7 +99,7 @@
 				<div class="flex-1 border-t border-border"></div>
 			</div>
 
-			<!-- ── Extremes ───────────────────────────────────────────────────── -->
+			<!-- ── Records ───────────────────────────────────────────────────── -->
 			<section class="flex flex-col gap-3">
 				<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">Records</h2>
 
@@ -114,21 +112,21 @@
 							<span class="font-semibold text-text">{topWinner.playerName}</span>
 						</div>
 						<span class="tabular text-lg font-semibold text-gold-light">
-							+{topWinner.biggestWin} kr
+							{formatNet(topWinner.biggestWin)}
 						</span>
 					</div>
 				{/if}
 
-				{#if topLoser && topLoser.biggestLoss < 0}
+				{#if topLoser && topLoser.worstNet < 0}
 					<div class="bg-surface rounded-card px-4 py-3 flex items-center justify-between gap-3">
 						<div class="flex flex-col gap-0.5">
 							<span class="text-xs text-text-muted uppercase tracking-wider font-semibold">
-								Biggest single loss
+								Worst single session
 							</span>
 							<span class="font-semibold text-text">{topLoser.playerName}</span>
 						</div>
 						<span class="tabular text-lg font-semibold text-red-light">
-							{topLoser.biggestLoss} kr
+							{formatNet(topLoser.worstNet)}
 						</span>
 					</div>
 				{/if}

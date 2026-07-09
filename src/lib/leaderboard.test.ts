@@ -17,11 +17,11 @@ import type { LeaderboardEntry, LeaderboardRow } from './leaderboard';
 //
 // Expected totals:
 //   Anna:  totalNet +200  (300 - 100),  sessionsPlayed 2, wins 1, winRate 0.5,
-//          biggestWin 300, biggestLoss -100
+//          biggestWin 300, worstNet -100
 //   Bo:    totalNet -100  (-300 + 200),  sessionsPlayed 2, wins 1, winRate 0.5,
-//          biggestWin 200, biggestLoss -300
+//          biggestWin 200, worstNet -300
 //   Chloe: totalNet 0,    sessionsPlayed 1, wins 0, winRate 0,
-//          biggestWin 0,  biggestLoss 0
+//          biggestWin 0,  worstNet 0
 //
 // Ranking by totalNet: Anna (+200) > Chloe (0) > Bo (-100)
 
@@ -90,14 +90,14 @@ describe('buildLeaderboard', () => {
 		expect(chloe.winRate).toBe(0);
 	});
 
-	it('tracks biggestWin and biggestLoss correctly', () => {
+	it('tracks biggestWin and worstNet correctly', () => {
 		const entries = buildLeaderboard(ROWS);
 		const anna = entries.find(e => e.playerId === 'anna')!;
 		const bo = entries.find(e => e.playerId === 'bo')!;
 		expect(anna.biggestWin).toBe(300);
-		expect(anna.biggestLoss).toBe(-100);
+		expect(anna.worstNet).toBe(-100);
 		expect(bo.biggestWin).toBe(200);
-		expect(bo.biggestLoss).toBe(-300);
+		expect(bo.worstNet).toBe(-300);
 	});
 
 	it('returns empty array for empty input', () => {
@@ -114,6 +114,6 @@ describe('buildLeaderboard', () => {
 		expect(entry.wins).toBe(0);
 		expect(entry.winRate).toBe(0);
 		expect(entry.biggestWin).toBe(0);
-		expect(entry.biggestLoss).toBe(0);
+		expect(entry.worstNet).toBe(0);
 	});
 });

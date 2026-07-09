@@ -28,7 +28,7 @@ export interface LeaderboardEntry {
 	/** Maximum single-session net (0 if never positive). */
 	biggestWin: number;
 	/** Minimum single-session net (0 if never negative). */
-	biggestLoss: number;
+	worstNet: number;
 }
 
 /**
@@ -54,7 +54,7 @@ export function buildLeaderboard(rows: LeaderboardRow[]): LeaderboardEntry[] {
 				wins: 0,
 				winRate: 0,
 				biggestWin: 0,
-				biggestLoss: 0,
+				worstNet: 0,
 			};
 			map.set(row.playerId, entry);
 		}
@@ -63,7 +63,7 @@ export function buildLeaderboard(rows: LeaderboardRow[]): LeaderboardEntry[] {
 		entry.sessionsPlayed += 1;
 		if (net > 0) entry.wins += 1;
 		if (net > entry.biggestWin) entry.biggestWin = net;
-		if (net < entry.biggestLoss) entry.biggestLoss = net;
+		if (net < entry.worstNet) entry.worstNet = net;
 	}
 
 	const entries = Array.from(map.values());

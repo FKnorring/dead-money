@@ -40,3 +40,16 @@ export function netClass(net: number): string {
 export function netSign(net: number): string {
 	return net > 0 ? '+' : '';
 }
+
+/**
+ * Format a net value for display, e.g. "+450 kr" or "-200 kr".
+ * Uses tabular sign prefix so positive and negative values align.
+ */
+export function formatNet(net: number): string {
+	return `${netSign(net)}${Math.abs(net)} kr`;
+}
+
+/** Format a win-rate fraction as a percentage string, e.g. "67%". */
+export function formatPercent(rate: number): string {
+	return `${Math.round(rate * 100)}%`;
+}
