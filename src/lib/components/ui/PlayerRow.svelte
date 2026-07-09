@@ -12,8 +12,8 @@
 
 	let { name, totalBuyIns, stack, net, isYou = false, trailing }: Props = $props();
 
-	const netClass = net > 0 ? 'net-positive' : net < 0 ? 'net-negative' : 'net-zero';
-	const netSign = net > 0 ? '+' : '';
+	const netClass = $derived(net > 0 ? 'net-positive' : net < 0 ? 'net-negative' : 'net-zero');
+	const netSign = $derived(net > 0 ? '+' : '');
 </script>
 
 <div

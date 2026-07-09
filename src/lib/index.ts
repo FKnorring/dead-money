@@ -18,3 +18,16 @@ export type { SessionConfig } from './chips';
 // Supabase client + types
 export { supabase } from './supabaseClient';
 export type { Database, Tables, Enums } from './database.types';
+
+// Session helpers
+export {
+	createSession,
+	startSession,
+	searchPlayers,
+	findOrCreatePlayer,
+	loadSeats,
+	upsertSeat,
+	claimSeat,
+	removeSeat
+} from './session';
+export type { Session, Player, Seat } from './session';

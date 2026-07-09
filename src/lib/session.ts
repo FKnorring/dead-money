@@ -1,0 +1,172 @@
+import { supabase } from './supabaseClient';
+import type { Tables } from './database.types';
+
+export type Session = Tables<'sessions'>;
+export type Player = Tables<'players'>;
+export type Seat = Tables<'seats'> & { players: Pick<Player, 'id' | 'name' | 'swish_number'> };
+
+// ─── Session ──────────────────────────────────────────────────────────────────
+
+/**
+ * Create a new Session in Lobby state and insert the host's Seat.
+ * Stores host_token and player_id in localStorage.
+ */
+export async function createSession({
+	hostPlayerId,
+	buyInAmount,
+	label,
+	location
+}: {
+	hostPlayerId: string;
+	buyInAmount: number;
+	label?: string;
+	location?: string;
+}): Promise<Session> {
+	const { data: session, error } = await supabase
+		.from('sessions')
+		.insert({
+			host_player_id: hostPlayerId,
+			buy_in_amount: buyInAmount,
+			bb_size: Math.round(buyInAmount / 100),
+			label: label || null,
+			location: location || null,
+			state: 'lobby'
+		})
+		.select()
+		.single();
+
+	if (error) throw error;
+
+	// Host's seat — claimed immediately
+	await upsertSeat({ sessionId: session.id, playerId: hostPlayerId, claimed: true });
+
+	// Persist host identity (ADR-0002)
+	if (typeof localStorage !== 'undefined') {
+		localStorage.setItem(`host_token_${session.id}`, 'true');
+		localStorage.setItem(`player_id_${session.id}`, hostPlayerId);
+	}
+
+	return session;
+}
+
+/**
+ * Transition a Session from lobby → active.
+ */
+export async function startSession(sessionId: string): Promise<void> {
+	const { error } = await supabase
+		.from('sessions')
+		.update({ state: 'active', started_at: new Date().toISOString() })
+		.eq('id', sessionId);
+
+	if (error) throw error;
+}
+
+// ─── Players ──────────────────────────────────────────────────────────────────
+
+/**
+ * Search the global player registry by name (case-insensitive prefix match).
+ * Returns up to 10 results.
+ */
+export async function searchPlayers(query: string): Promise<Player[]> {
+	if (!query.trim()) return [];
+
+	const { data, error } = await supabase
+		.from('players')
+		.select()
+		.ilike('name', `%${query}%`)
+		.order('name')
+		.limit(10);
+
+	if (error) throw error;
+	return data ?? [];
+}
+
+/**
+ * Find an existing player by exact name (case-insensitive), or create a new one.
+ */
+export async function findOrCreatePlayer(name: string): Promise<Player> {
+	const trimmed = name.trim();
+
+	// Try exact match first
+	const { data: existing } = await supabase
+		.from('players')
+		.select()
+		.ilike('name', trimmed)
+		.limit(1)
+		.single();
+
+	if (existing) return existing;
+
+	// Create new player
+	const { data: created, error } = await supabase
+		.from('players')
+		.insert({ name: trimmed })
+		.select()
+		.single();
+
+	if (error) throw error;
+	return created;
+}
+
+// ─── Seats ───────────────────────────────────────────────────────────────────
+
+/**
+ * Load all Seats for a Session, joined with the Player's name.
+ */
+export async function loadSeats(sessionId: string): Promise<Seat[]> {
+	const { data, error } = await supabase
+		.from('seats')
+		.select('*, players(id, name, swish_number)')
+		.eq('session_id', sessionId)
+		.order('joined_at');
+
+	if (error) throw error;
+	return (data ?? []) as Seat[];
+}
+
+/**
+ * Add a player to a session (or claim their existing seat).
+ * Handles both: host adding someone (claimed=false) and player joining (claimed=true).
+ */
+export async function upsertSeat({
+	sessionId,
+	playerId,
+	claimed
+}: {
+	sessionId: string;
+	playerId: string;
+	claimed: boolean;
+}): Promise<void> {
+	const { error } = await supabase
+		.from('seats')
+		.upsert(
+			{ session_id: sessionId, player_id: playerId, claimed },
+			{ onConflict: 'session_id,player_id', ignoreDuplicates: false }
+		);
+
+	if (error) throw error;
+}
+
+/**
+ * Claim an existing seat by its ID (player identifying themselves).
+ */
+export async function claimSeat(seatId: string): Promise<void> {
+	const { error } = await supabase
+		.from('seats')
+		.update({ claimed: true })
+		.eq('id', seatId);
+
+	if (error) throw error;
+}
+
+/**
+ * Remove a player's seat from a session (host only).
+ */
+export async function removeSeat(seatId: string): Promise<void> {
+	const { error } = await supabase
+		.from('seats')
+		.delete()
+		.eq('id', seatId);
+
+	if (error) throw error;
+}
