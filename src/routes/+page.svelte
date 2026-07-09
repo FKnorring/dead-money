@@ -1,77 +1,104 @@
 <script lang="ts">
-	// Temporary design-system smoke test — replace when building the lobby
+	import { Button, ChipButton, Card, Badge, NumberInput, PlayerRow, Sheet } from '$lib';
+
+	let sheetOpen = $state(false);
+	let customAmount = $state<number | null>(null);
+
+	const players = [
+		{ name: 'Anna', totalBuyIns: 200, stack: 650, net: 450, isYou: false },
+		{ name: 'Erik', totalBuyIns: 400, stack: 200, net: -200, isYou: true },
+		{ name: 'Bo', totalBuyIns: 200, stack: 200, net: 0, isYou: false },
+	];
 </script>
 
-<main class="min-h-dvh bg-[var(--color-bg)] text-[var(--color-text)] p-6 flex flex-col gap-8">
+<main class="min-h-dvh bg-bg text-text p-5 flex flex-col gap-8 max-w-md mx-auto">
 
-	<!-- Ceremonial header sample -->
-	<section class="felt rounded-[var(--radius-card)] p-8 flex flex-col gap-2">
-		<h1 class="font-[family-name:var(--font-display)] text-5xl tracking-wider text-[var(--color-text)]">
-			dead-money
-		</h1>
-		<p class="text-[var(--color-text-muted)] text-sm">♠ ♥ ♦ ♣</p>
+	<!-- ── Ceremonial header ── -->
+	<section class="felt rounded-card p-8 flex flex-col gap-2">
+		<h1 class="font-display text-5xl tracking-wider">dead-money</h1>
+		<p class="text-text-muted text-sm">♠ ♥ ♦ ♣</p>
 	</section>
 
-	<!-- Color palette -->
+	<!-- ── Buttons ── -->
 	<section class="flex flex-col gap-3">
-		<h2 class="font-semibold text-[var(--color-text-muted)] text-xs uppercase tracking-widest">
-			Palette
-		</h2>
-		<div class="grid grid-cols-3 gap-2">
-			{#each [
-				{ label: 'bg', color: '#0a120d' },
-				{ label: 'surface', color: '#111a13' },
-				{ label: 'border', color: '#1e2e20' },
-				{ label: 'green', color: '#35654d' },
-				{ label: 'red', color: '#c0392b' },
-				{ label: 'gold', color: '#d4a017' },
-			] as swatch}
-				<div class="flex flex-col gap-1">
-					<div
-						class="h-10 rounded-[var(--radius-sm)] border border-[var(--color-border)]"
-						style="background:{swatch.color}"
-					></div>
-					<span class="text-[var(--color-text-muted)] text-xs">{swatch.label}</span>
-				</div>
-			{/each}
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">Buttons</h2>
+		<div class="flex flex-wrap gap-2">
+			<Button>Primary</Button>
+			<Button variant="secondary">Secondary</Button>
+			<Button variant="ghost">Ghost</Button>
+			<Button variant="danger">Danger</Button>
 		</div>
+		<div class="flex flex-wrap gap-2">
+			<Button size="sm">Small</Button>
+			<Button size="md">Medium</Button>
+			<Button size="lg">Large</Button>
+		</div>
+		<Button disabled>Disabled</Button>
 	</section>
 
-	<!-- Action buttons (chip-style, press feel) -->
+	<!-- ── Chip buttons ── -->
 	<section class="flex flex-col gap-3">
-		<h2 class="font-semibold text-[var(--color-text-muted)] text-xs uppercase tracking-widest">
-			Chip Buttons
-		</h2>
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">Chip Buttons</h2>
 		<div class="flex gap-3 flex-wrap">
 			{#each ['0.5x', '1x', '1.5x', '2x'] as mult}
-				<button
-					class="btn-action w-16 h-16 rounded-[var(--radius-chip)] bg-[var(--color-green)] text-[var(--color-text)] font-semibold text-sm"
-				>
-					{mult}
-				</button>
+				<ChipButton label={mult} />
 			{/each}
+		</div>
+		<div class="flex gap-3 flex-wrap">
+			<ChipButton label="-100" tone="red" />
+			<ChipButton label="-50" tone="red" />
+			<ChipButton label="+50" />
+			<ChipButton label="+100" />
 		</div>
 	</section>
 
-	<!-- Net values with tabular numbers -->
+	<!-- ── Badges ── -->
 	<section class="flex flex-col gap-3">
-		<h2 class="font-semibold text-[var(--color-text-muted)] text-xs uppercase tracking-widest">
-			Net Values
-		</h2>
-		<div class="bg-[var(--color-surface)] rounded-[var(--radius-card)] p-4 flex flex-col gap-2">
-			{#each [
-				{ name: 'Anna', net: 450, display: '+450 kr' },
-				{ name: 'Erik', net: -200, display: '-200 kr' },
-				{ name: 'Bo', net: 0, display: '±0 kr' },
-			] as player}
-				<div class="flex justify-between items-center">
-					<span class="text-[var(--color-text)]">{player.name}</span>
-					<span class="tabular font-semibold {player.net > 0 ? 'net-positive' : player.net < 0 ? 'net-negative' : 'net-zero'}">
-						{player.display}
-					</span>
-				</div>
-			{/each}
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">Badges</h2>
+		<div class="flex gap-2 flex-wrap">
+			<Badge>Neutral</Badge>
+			<Badge variant="positive">+450 kr</Badge>
+			<Badge variant="negative">-200 kr</Badge>
+			<Badge variant="gold">🏆 Top</Badge>
 		</div>
+	</section>
+
+	<!-- ── Player rows ── -->
+	<section class="flex flex-col gap-3">
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">Player Rows</h2>
+		<Card class="p-0 divide-y divide-border">
+			{#each players as player}
+				<PlayerRow {...player} />
+			{/each}
+		</Card>
+	</section>
+
+	<!-- ── Number input ── -->
+	<section class="flex flex-col gap-3">
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">Number Input</h2>
+		<NumberInput bind:value={customAmount} placeholder="Enter amount…" />
+		{#if customAmount}
+			<p class="text-text-muted text-sm tabular">You entered: {customAmount} kr</p>
+		{/if}
+	</section>
+
+	<!-- ── Sheet ── -->
+	<section class="flex flex-col gap-3">
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">Sheet</h2>
+		<Button onclick={() => (sheetOpen = true)}>Open Custom Amount Sheet</Button>
 	</section>
 
 </main>
+
+<Sheet bind:open={sheetOpen} title="Custom Buy-in">
+	<div class="flex flex-col gap-4">
+		<p class="text-text-muted text-sm">Enter a custom amount in kr.</p>
+		<NumberInput bind:value={customAmount} placeholder="0" />
+	</div>
+	{#snippet footer()}
+		<div class="flex gap-3">
+			<Button variant="ghost" class="flex-1" onclick={() => (sheetOpen = false)}>Cancel</Button>
+			<Button class="flex-1" onclick={() => (sheetOpen = false)}>Confirm</Button>
+		</div>
+	{/snippet}
+</Sheet>

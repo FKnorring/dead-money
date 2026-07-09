@@ -23,6 +23,13 @@ export default defineConfig({
 		environment: 'jsdom',
 		globals: true,
 		setupFiles: ['./src/test-setup.ts'],
-		include: ['src/**/*.test.ts']
+		include: ['src/**/*.test.ts'],
+		// Svelte 5: resolve the browser build so mount() is available in jsdom
+		alias: [
+			{
+				find: /^svelte$/,
+				replacement: new URL('./node_modules/svelte/src/index-client.js', import.meta.url).pathname
+			}
+		]
 	}
 });
