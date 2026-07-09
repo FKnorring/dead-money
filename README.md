@@ -35,6 +35,8 @@ npm run dev
 
 See [`CONTEXT.md`](./CONTEXT.md) for the canonical glossary and [`docs/adr/`](./docs/adr/) for architectural decisions.
 
+See [`docs/DESIGN.md`](./docs/DESIGN.md) for the UI design direction.
+
 ---
 
 _"It's not bad play, it's variance."_

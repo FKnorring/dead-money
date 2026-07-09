@@ -1,47 +1,35 @@
-# Dependencies
-node_modules/
+node_modules
 
-# Build output
-.svelte-kit/
-build/
-dist/
-
-# Environment variables
-.env
-.env.*
-!.env.example
-
-# Supabase
-supabase/.temp/
-
-# Editor
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Supabase
+supabase/.temp/
 
 # Testing
 /coverage
 /test-results
 /playwright-report
 
-# TypeScript
-*.tsbuildinfo
-
-# Misc
-.cache/
+# Logs
+*.log
+npm-debug.log*
