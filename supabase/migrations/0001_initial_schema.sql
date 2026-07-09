@@ -95,6 +95,19 @@ create policy "public access" on seats        for all to anon using (true) with 
 create policy "public access" on buy_ins      for all to anon using (true) with check (true);
 create policy "public access" on stack_events for all to anon using (true) with check (true);
 
+-- ─── Data API access (breaking change: 2026-04-28) ───────────────────────────
+-- As of April 2026, new Supabase projects no longer auto-expose tables to the
+-- REST Data API. Explicit GRANTs are required for the anon role to reach them.
+-- This is separate from RLS — grants control table visibility, RLS controls rows.
+
+grant usage on schema public to anon, authenticated;
+
+grant select, insert, update, delete on players      to anon, authenticated;
+grant select, insert, update, delete on sessions     to anon, authenticated;
+grant select, insert, update, delete on seats        to anon, authenticated;
+grant select, insert, update, delete on buy_ins      to anon, authenticated;
+grant select, insert, update, delete on stack_events to anon, authenticated;
+
 -- ─── Realtime ────────────────────────────────────────────────────────────────
 -- Enable Postgres CDC for all tables so live buy-in and stack updates broadcast
 -- to all connected clients.
