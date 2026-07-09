@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { PlayerRow, Sheet, NumberInput, Button } from '$lib';
 	import { calculateNet } from '$lib';
-	import { cashOutSeat as doCashOut, closeSession } from '$lib';
+	import { cashOutSeat, closeSession } from '$lib';
 	import type { Session, SeatWithPlayer } from '$lib';
 
 	interface Props {
@@ -63,7 +63,7 @@
 		if (!cashOutTarget || cashOutAmount === null || cashingOut) return;
 		cashingOut = true;
 		try {
-			await doCashOut({ seatId: cashOutTarget.id, finalStack: cashOutAmount });
+			await cashOutSeat({ seatId: cashOutTarget.id, finalStack: cashOutAmount });
 			cashOutSheetOpen = false;
 			cashOutTarget = null;
 			cashOutAmount = null;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ChipButton, Sheet, NumberInput } from '$lib';
-	import { recordBuyIn, updateStack, cashOutSeat as doCashOut } from '$lib';
+	import { recordBuyIn, updateStack, cashOutSeat } from '$lib';
 	import { calculateNet, formatAmount, netClass as getNetClass, netSign as getNetSign } from '$lib';
 	import type { Session, SeatWithPlayer } from '$lib';
 
@@ -136,7 +136,7 @@
 		if (cashOutAmount === null || busy) return;
 		busy = true;
 		try {
-			await doCashOut({ seatId: seat.id, finalStack: cashOutAmount });
+			await cashOutSeat({ seatId: seat.id, finalStack: cashOutAmount });
 			cashOutSheetOpen = false;
 			cashOutAmount = null;
 			onStackChange?.();
@@ -314,7 +314,7 @@
 </Sheet>
 
 <!-- ── Cash Out sheet ────────────────────────────────────────────────────── -->
-<Sheet bind:open={cashOutSheetOpen} title="Cash out?">
+<Sheet bind:open={cashOutSheetOpen} title="Cash out {seat.players.name}?">
 	<div class="flex flex-col gap-3">
 		<p class="text-text-muted text-sm">Enter your final stack to lock in your result and leave.</p>
 		<NumberInput

@@ -45,13 +45,14 @@
 		seats
 			.map((seat): SeatResult => {
 				const totalBuyIns = buyInTotals[seat.player_id] ?? 0;
-				const net = calculateNet({ totalBuyIns, finalStack: seat.final_stack ?? seat.stack });
+				// Use final_stack only — calculateNet treats null as 0 (busted / no cash-out recorded)
+				const net = calculateNet({ totalBuyIns, finalStack: seat.final_stack });
 				return { seat, totalBuyIns, net };
 			})
 			.sort((a, b) => b.net - a.net)
 	);
 
-	const transfers = $derived((): Transfer[] => {
+	const transfers = $derived.by((): Transfer[] => {
 		const seatResultList = seatResults.map(r => ({ playerId: r.seat.player_id, net: r.net }));
 		const raw = calculateSettlement(seatResultList);
 
@@ -91,12 +92,12 @@
 	let savingSwish = $state(false);
 	let swishError = $state('');
 
-	// Show the swish nudge if the current player is involved in a transfer but has no swish number
-	const mySwishNudge = $derived(() => {
+	// Show the swish nudge if the current player is owed money but has no swish number
+	const mySwishNudge = $derived.by(() => {
 		if (!myPlayerId) return false;
 		const mySeat = seats.find(s => s.player_id === myPlayerId);
 		if (!mySeat || mySeat.players.swish_number) return false;
-		return transfers().some(t => t.to === myPlayerId);
+		return transfers.some(t => t.to === myPlayerId);
 	});
 
 	async function handleSaveSwish() {
@@ -193,7 +194,7 @@
 		</section>
 
 		<!-- ── Suits divider ─────────────────────────────────────────────────── -->
-		{#if transfers().length > 0}
+		{#if transfers.length > 0}
 			<div class="flex items-center gap-3">
 				<div class="flex-1 border-t border-border"></div>
 				<span class="text-text-muted text-base leading-none">♥ ♠ ♦ ♣</span>
@@ -206,7 +207,7 @@
 					Settle Up
 				</h2>
 				<div class="flex flex-col gap-3">
-					{#each transfers() as transfer, i (i)}
+					{#each transfers as transfer, i (i)}
 						<div class="bg-surface rounded-card p-4 flex flex-col gap-3">
 							<p class="text-text text-sm font-medium">
 								<span class="text-red-light">{playerName(transfer.from)}</span>
@@ -244,7 +245,7 @@
 		{/if}
 
 		<!-- ── Add Swish number nudge ──────────────────────────────────────── -->
-		{#if mySwishNudge()}
+		{#if mySwishNudge}
 			<div class="bg-surface-high rounded-card p-4 flex flex-col gap-2 border border-border">
 				<p class="text-text text-sm font-medium">Add your Swish number</p>
 				<p class="text-text-muted text-xs">
