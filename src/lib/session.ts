@@ -267,6 +267,95 @@ export async function updateStack({
 }
 
 /**
+ * Lock a player's final stack and mark them as cashed out.
+ * - Sets seats.cashed_out=true, final_stack, cashed_out_at=now().
+ * - Writes a stack_events row with type='cash_out'.
+ */
+export async function cashOutSeat({
+	seatId,
+	finalStack
+}: {
+	seatId: string;
+	finalStack: number;
+}): Promise<void> {
+	// First fetch the seat so we have session_id and player_id for the event row.
+	const { data: seat, error: fetchError } = await supabase
+		.from('seats')
+		.select('session_id, player_id')
+		.eq('id', seatId)
+		.single();
+
+	if (fetchError) throw fetchError;
+
+	const { error: seatError } = await supabase
+		.from('seats')
+		.update({
+			cashed_out: true,
+			final_stack: finalStack,
+			cashed_out_at: new Date().toISOString(),
+		})
+		.eq('id', seatId);
+
+	if (seatError) throw seatError;
+
+	const { error: eventError } = await supabase
+		.from('stack_events')
+		.insert({
+			seat_id: seatId,
+			session_id: seat.session_id,
+			player_id: seat.player_id,
+			amount: finalStack,
+			type: 'cash_out' as const,
+		});
+
+	if (eventError) throw eventError;
+}
+
+/**
+ * Transition a Session from active → closed.
+ */
+export async function closeSession(sessionId: string): Promise<void> {
+	const { error } = await supabase
+		.from('sessions')
+		.update({ state: 'closed', closed_at: new Date().toISOString() })
+		.eq('id', sessionId);
+
+	if (error) throw error;
+}
+
+/**
+ * Update a player's Swish number (for receiving payments on the settlement screen).
+ */
+export async function updatePlayerSwish(playerId: string, swishNumber: string): Promise<void> {
+	const { error } = await supabase
+		.from('players')
+		.update({ swish_number: swishNumber })
+		.eq('id', playerId);
+
+	if (error) throw error;
+}
+
+/**
+ * Build a Swish deep-link for a payment.
+ * Format: swish://payment?payee=<swishNumber>&amount=<amount>&message=Poker+<date>
+ *
+ * @param swishNumber  The payee's Swish number (digits only, e.g. "0701234567")
+ * @param amount       Amount in kr (integer)
+ * @param date         Date string used in the message, e.g. "2026-07-09"
+ */
+export function buildSwishLink({
+	swishNumber,
+	amount,
+	date,
+}: {
+	swishNumber: string;
+	amount: number;
+	date: string;
+}): string {
+	return `swish://payment?payee=${swishNumber}&amount=${amount}&message=Poker+${date}`;
+}
+
+/**
  * Load total buy-ins per player for a session.
  * Returns a Record<playerId, totalKr>.
  */

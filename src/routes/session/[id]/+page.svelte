@@ -53,7 +53,7 @@
 	$effect(() => {
 		const sync = useSessionSync(session.id, seats, (fresh) => { seats = fresh; });
 
-		// Subscribe to session state changes (e.g. host starts game)
+		// Subscribe to session state changes (e.g. host starts or closes game)
 		const sessionChannel = supabase
 			.channel(`session:${session.id}`)
 			.on(
@@ -63,6 +63,8 @@
 					session = { ...session, ...payload.new };
 					if (payload.new.state === 'active') {
 						goto(`/session/${session.id}/play`);
+					} else if (payload.new.state === 'closed') {
+						goto(`/session/${session.id}/end`);
 					}
 				}
 			)

@@ -29,6 +29,7 @@ export type { Database, Tables, Enums } from './database.types';
 export {
 	createSession,
 	startSession,
+	closeSession,
 	loadSession,
 	searchPlayers,
 	findOrCreatePlayer,
@@ -36,8 +37,11 @@ export {
 	upsertSeat,
 	claimSeat,
 	removeSeat,
+	cashOutSeat,
 	recordBuyIn,
 	updateStack,
-	loadBuyInTotals
+	loadBuyInTotals,
+	updatePlayerSwish,
+	buildSwishLink,
 } from './session';
 export type { Session, Player, Seat, SeatWithPlayer, BuyIn, StackEvent } from './session';

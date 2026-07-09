@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ChipButton, Sheet, NumberInput } from '$lib';
-	import { recordBuyIn, updateStack } from '$lib';
+	import { recordBuyIn, updateStack, cashOutSeat as doCashOut } from '$lib';
 	import { calculateNet, formatAmount, netClass as getNetClass, netSign as getNetSign } from '$lib';
 	import type { Session, SeatWithPlayer } from '$lib';
 
@@ -57,7 +57,7 @@
 	const netPfx = $derived(getNetSign(net));
 
 	function fmt(kr: number): string {
-		return fmt(kr, displayUnit, session);
+		return formatAmount(kr, displayUnit, session);
 	}
 
 	// ── Expanded rows ─────────────────────────────────────────────────────────
@@ -72,6 +72,9 @@
 
 	let stackSheetOpen = $state(false);
 	let stackAmount = $state<number | null>(null);
+
+	let cashOutSheetOpen = $state(false);
+	let cashOutAmount = $state<number | null>(null);
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
@@ -127,6 +130,19 @@
 		await handleSetStack(stackAmount);
 		stackSheetOpen = false;
 		stackAmount = null;
+	}
+
+	async function handleCashOut() {
+		if (cashOutAmount === null || busy) return;
+		busy = true;
+		try {
+			await doCashOut({ seatId: seat.id, finalStack: cashOutAmount });
+			cashOutSheetOpen = false;
+			cashOutAmount = null;
+			onStackChange?.();
+		} finally {
+			busy = false;
+		}
 	}
 </script>
 
@@ -232,6 +248,21 @@
 			</div>
 		{/if}
 	</section>
+
+	<!-- ── Cash Out section ──────────────────────────────────────────────── -->
+	<section class="flex flex-col gap-3 border-t border-border pt-4">
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
+			Cash Out
+		</h2>
+		<button
+			onclick={() => { cashOutAmount = stack ?? null; cashOutSheetOpen = true; }}
+			disabled={busy}
+			class="w-full h-tap rounded-sm bg-surface border border-red text-red-light text-sm font-semibold
+				hover:bg-red-dim transition-colors disabled:opacity-40 disabled:pointer-events-none"
+		>
+			Cash Out
+		</button>
+	</section>
 </div>
 
 <!-- ── Buy-in custom amount sheet ────────────────────────────────────────── -->
@@ -278,6 +309,32 @@
 				disabled={!stackAmount || busy}
 				onclick={handleStackExact}
 			>Set Stack</button>
+		</div>
+	{/snippet}
+</Sheet>
+
+<!-- ── Cash Out sheet ────────────────────────────────────────────────────── -->
+<Sheet bind:open={cashOutSheetOpen} title="Cash out?">
+	<div class="flex flex-col gap-3">
+		<p class="text-text-muted text-sm">Enter your final stack to lock in your result and leave.</p>
+		<NumberInput
+			bind:value={cashOutAmount}
+			placeholder="Final stack (kr)"
+		/>
+	</div>
+	{#snippet footer()}
+		<div class="flex gap-3">
+			<button
+				class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium"
+				onclick={() => { cashOutSheetOpen = false; cashOutAmount = null; }}
+			>Cancel</button>
+			<button
+				class="flex-1 h-tap rounded-sm bg-red text-text text-sm font-semibold disabled:opacity-40"
+				disabled={cashOutAmount === null || busy}
+				onclick={handleCashOut}
+			>
+				{busy ? 'Locking…' : 'Confirm Cash Out'}
+			</button>
 		</div>
 	{/snippet}
 </Sheet>

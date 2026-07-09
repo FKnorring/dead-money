@@ -66,7 +66,7 @@
 			)
 			.subscribe();
 
-		// Redirect back to lobby if session is no longer active
+		// Redirect to end screen when closed, back to lobby for any other state change
 		const sessionChannel = supabase
 			.channel(`play:session:${session.id}`)
 			.on(
@@ -74,7 +74,9 @@
 				{ event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${session.id}` },
 				(payload) => {
 					session = { ...session, ...payload.new };
-					if (payload.new.state !== 'active') {
+					if (payload.new.state === 'closed') {
+						goto(`/session/${session.id}/end`);
+					} else if (payload.new.state !== 'active') {
 						goto(`/session/${session.id}`);
 					}
 				}
@@ -177,6 +179,8 @@
 				{buyInTotals}
 				{myPlayerId}
 				{isHost}
+				onCashOut={handleChange}
+				onSessionClose={handleChange}
 			/>
 		{/if}
 	</div>
