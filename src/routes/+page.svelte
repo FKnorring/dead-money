@@ -123,6 +123,16 @@
 		{:else}
 			<p class="text-text-muted text-sm text-center py-8">No games yet. Start one!</p>
 		{/if}
+
+		<!-- ── Leaderboard link ── -->
+		<a
+			href="/leaderboard"
+			class="flex items-center justify-between px-4 h-tap rounded-card
+				bg-surface border border-border hover:bg-surface-high transition-colors"
+		>
+			<span class="text-text font-medium text-sm">Leaderboard</span>
+			<span class="text-text-muted text-sm">→</span>
+		</a>
 	</div>
 </main>
 

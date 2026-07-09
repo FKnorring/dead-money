@@ -11,10 +11,12 @@ export { default as Sheet } from './components/ui/Sheet.svelte';
 export { calculateSettlement } from './settlement';
 export { calculateNet } from './net';
 export { calculateAwards } from './awards';
+export { buildLeaderboard } from './leaderboard';
 export { krToBb, bbToKr, bbSizeKr, formatAmount, netClass, netSign } from './chips';
 export type { SeatResult, Transfer } from './settlement';
 export type { NetInput } from './net';
 export type { AwardInput, Award } from './awards';
+export type { LeaderboardRow, LeaderboardEntry } from './leaderboard';
 
 // Identity (ADR-0001, ADR-0002)
 export { getMyPlayerId, isHost, setMyPlayerId, setHost, clearIdentity } from './identity';
@@ -47,5 +49,7 @@ export {
 	loadStackLows,
 	updatePlayerSwish,
 	buildSwishLink,
+	loadLeaderboardData,
+	loadPlayerHistory,
 } from './session';
-export type { Session, Player, Seat, SeatWithPlayer, BuyIn, StackEvent } from './session';
+export type { Session, Player, Seat, SeatWithPlayer, BuyIn, StackEvent, PlayerSessionRow } from './session';
