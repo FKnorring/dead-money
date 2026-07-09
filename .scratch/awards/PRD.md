@@ -10,6 +10,11 @@ The end of a session is the most social moment of the night. Right now the settl
 
 After the transfer list on the settlement screen, display a set of Awards — one per notable stat. Each award has a name, an icon, the recipient, and a mocking description. Awards should mock everyone: winners, losers, and especially break-evens.
 
+## Vocab
+
+Use poker language in a fun and witty ways like. Our group uses the following words, jokes and phrases a lot:
+fish, nit, nutted, board coverage (when playing a bad hand big pre-flop), in-joke: J7 is the most winningest hand in poker
+
 ## User Stories
 
 1. As a player, I want to see fun mocking badges at the end of the session, so the settlement screen feels like a ceremony.
@@ -17,6 +22,7 @@ After the transfer list on the settlement screen, display a set of Awards — on
 3. As a player, I want the awards to cover multiple categories (biggest win, biggest loss, most buy-ins, break-even, first to bust, biggest comeback), so there's something for everyone.
 4. As a player, I want the award descriptions to be witty and mocking, so we all laugh regardless of outcome.
 5. As a player, I want the stats underlying each award to be visible, so the award feels earned.
+6. As a player, I want award texts to be unique so that i am not bored when i see the same text in another session
 
 ## Implementation Decisions
 
@@ -25,15 +31,15 @@ After the transfer list on the settlement screen, display a set of Awards — on
 - `Award`: `{ id: string; recipientName: string; title: string; description: string; stat: string }`
 - Award categories (all must be populated — mock the result however it comes out):
 
-| Award ID | Condition | Mock tone |
-|---|---|---|
-| `biggest-winner` | highest net | backhanded congratulations |
-| `biggest-loser` | lowest net (most negative) | commiseration |
-| `break-even` | net closest to 0 | pure mockery of pointlessness |
-| `most-buyins` | most buy-in events | "the fish award" |
-| `last-stand` | cashed out last (latest `cashed_out_at`) | heroic or pathetic depending on net |
-| `first-bust` | first to cash out with negative net | swift defeat |
-| `biggest-comeback` | biggest positive swing (final_stack - first_stack after first_buyin, if tracked) | grudging respect |
+| Award ID           | Condition                                                                        | Mock tone                           |
+| ------------------ | -------------------------------------------------------------------------------- | ----------------------------------- |
+| `biggest-winner`   | highest net                                                                      | backhanded congratulations          |
+| `biggest-loser`    | lowest net (most negative)                                                       | commiseration                       |
+| `break-even`       | net closest to 0                                                                 | pure mockery of pointlessness       |
+| `most-buyins`      | most buy-in events                                                               | "the fish award"                    |
+| `last-stand`       | cashed out last (latest `cashed_out_at`)                                         | heroic or pathetic depending on net |
+| `first-bust`       | first to cash out with negative net                                              | swift defeat                        |
+| `biggest-comeback` | biggest positive swing (final_stack - first_stack after first_buyin, if tracked) | grudging respect                    |
 
 - Awards are computed client-side at session end — not stored in the DB.
 - The `awards.ts` module is a pure function with no DB dependency. Test with known inputs and expected award assignments.

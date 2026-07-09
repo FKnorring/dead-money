@@ -23,6 +23,7 @@ export type { Database, Tables, Enums } from './database.types';
 export {
 	createSession,
 	startSession,
+	loadSession,
 	searchPlayers,
 	findOrCreatePlayer,
 	loadSeats,

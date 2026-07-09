@@ -207,8 +207,10 @@
 		<button
 			onclick={() => { activeTab = 'my-session'; }}
 			class={[
-				'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors',
-				activeTab === 'my-session' ? 'text-green-light' : 'text-text-muted hover:text-text',
+				'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors border-t-2',
+				activeTab === 'my-session'
+					? 'text-green-light border-green-light'
+					: 'text-text-muted hover:text-text border-transparent',
 			]}
 			aria-current={activeTab === 'my-session' ? 'page' : undefined}
 		>
@@ -218,8 +220,10 @@
 		<button
 			onclick={() => { activeTab = 'the-table'; }}
 			class={[
-				'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors',
-				activeTab === 'the-table' ? 'text-green-light' : 'text-text-muted hover:text-text',
+				'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors border-t-2',
+				activeTab === 'the-table'
+					? 'text-green-light border-green-light'
+					: 'text-text-muted hover:text-text border-transparent',
 			]}
 			aria-current={activeTab === 'the-table' ? 'page' : undefined}
 		>

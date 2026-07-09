@@ -2,7 +2,6 @@
 	import { ChipButton, Sheet, NumberInput } from '$lib';
 	import { recordBuyIn, updateStack } from '$lib';
 	import { calculateNet } from '$lib';
-	import { krToBb } from '$lib';
 	import type { Seat, Session } from '$lib';
 
 	interface Props {
@@ -57,9 +56,9 @@
 	const netClass = $derived(net > 0 ? 'net-positive' : net < 0 ? 'net-negative' : 'net-zero');
 	const netSign = $derived(net > 0 ? '+' : '');
 
-	function fmt(kr: number): string {
+	function formatAmount(kr: number): string {
 		if (displayUnit === 'bb') {
-			const bb = krToBb(kr, { buyInKr: buyIn });
+			const bb = kr / bbSize;
 			return `${bb % 1 === 0 ? bb.toFixed(0) : bb.toFixed(1)} BB`;
 		}
 		return `${kr} kr`;
@@ -141,18 +140,20 @@
 	<section class="bg-surface rounded-card p-4 flex flex-col gap-3">
 		<div class="flex items-baseline justify-between gap-3">
 			<span class="text-text-muted text-sm">Stack</span>
+			{#key stack}
 			<span class="tabular text-3xl font-semibold text-text stack-value">
-				{stack !== null ? fmt(stack) : '—'}
+				{stack !== null ? formatAmount(stack) : '—'}
 			</span>
+		{/key}
 		</div>
 		<div class="flex items-center justify-between gap-3 text-sm">
 			<span class="text-text-muted">Bought in</span>
-			<span class="tabular text-text">{fmt(totalBuyIns)}</span>
+			<span class="tabular text-text">{formatAmount(totalBuyIns)}</span>
 		</div>
 		<div class="flex items-center justify-between gap-3 text-sm border-t border-border pt-3">
 			<span class="text-text-muted">Net</span>
 			<span class={['tabular font-semibold', netClass]}>
-				{netSign}{fmt(net)}
+				{netSign}{formatAmount(net)}
 			</span>
 		</div>
 	</section>

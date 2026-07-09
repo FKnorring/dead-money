@@ -1,13 +1,9 @@
 import { error, redirect } from '@sveltejs/kit';
-import { supabase, loadSeats, loadBuyInTotals } from '$lib';
+import { loadSession, loadSeats, loadBuyInTotals } from '$lib';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params }) => {
-	const { data: session } = await supabase
-		.from('sessions')
-		.select('*')
-		.eq('id', params.id)
-		.single();
+	const session = await loadSession(params.id);
 
 	if (!session) error(404, 'Session not found');
 	if (session.state !== 'active') redirect(302, `/session/${params.id}`);

@@ -61,6 +61,20 @@ export async function startSession(sessionId: string): Promise<void> {
 	if (error) throw error;
 }
 
+/**
+ * Load a single Session by ID. Returns null if not found.
+ */
+export async function loadSession(sessionId: string): Promise<Session | null> {
+	const { data, error } = await supabase
+		.from('sessions')
+		.select('*')
+		.eq('id', sessionId)
+		.maybeSingle();
+
+	if (error) throw error;
+	return data;
+}
+
 // ─── Players ──────────────────────────────────────────────────────────────────
 
 /**
@@ -176,6 +190,24 @@ export async function removeSeat(seatId: string): Promise<void> {
 export type BuyIn = Tables<'buy_ins'>;
 export type StackEvent = Tables<'stack_events'>;
 
+async function emitStackSnapshot({
+	seatId,
+	sessionId,
+	playerId,
+	amount
+}: {
+	seatId: string;
+	sessionId: string;
+	playerId: string;
+	amount: number;
+}): Promise<void> {
+	const { error } = await supabase
+		.from('stack_events')
+		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount, type: 'snapshot' as const });
+
+	if (error) throw error;
+}
+
 /**
  * Record a buy-in for a player in an active session.
  * - Inserts a buy_ins row.
@@ -201,20 +233,18 @@ export async function recordBuyIn({
 	if (buyInError) throw buyInError;
 
 	// Write a stack_events snapshot
-	const { error: eventError } = await supabase
-		.from('stack_events')
-		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount, type: 'snapshot' });
-
-	if (eventError) throw eventError;
+	await emitStackSnapshot({ seatId, sessionId, playerId, amount });
 
 	// Seed stack to buy-in amount if it's the player's first buy-in (stack is null)
-	const { data: seat } = await supabase
+	const { data: seat, error: seatFetchError } = await supabase
 		.from('seats')
 		.select('stack')
 		.eq('id', seatId)
-		.single();
+		.maybeSingle();
 
-	if (seat?.stack === null) {
+	if (seatFetchError) throw seatFetchError;
+
+	if (seat && seat.stack === null) {
 		const { error: stackError } = await supabase
 			.from('seats')
 			.update({ stack: amount })
@@ -247,11 +277,7 @@ export async function updateStack({
 
 	if (seatError) throw seatError;
 
-	const { error: eventError } = await supabase
-		.from('stack_events')
-		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount: stack, type: 'snapshot' });
-
-	if (eventError) throw eventError;
+	await emitStackSnapshot({ seatId, sessionId, playerId, amount: stack });
 }
 
 /**

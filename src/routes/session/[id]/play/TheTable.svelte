@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { PlayerRow } from '$lib';
 	import { calculateNet } from '$lib';
 	import type { Seat, Session } from '$lib';
@@ -70,13 +71,13 @@
 					>
 						{#snippet trailing()}
 							{#if isHost}
-								<a
-									href="/session/{session.id}/cashout/{seat.id}"
+								<button
+									onclick={() => goto(`/session/${session.id}/cashout/${seat.id}`)}
 									class="text-text-muted text-xs hover:text-red-light transition-colors px-1 py-1 shrink-0"
 									aria-label="Cash out {seat.players.name}"
 								>
 									Cash Out
-								</a>
+								</button>
 							{/if}
 						{/snippet}
 					</PlayerRow>
