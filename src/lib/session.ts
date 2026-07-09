@@ -170,3 +170,105 @@ export async function removeSeat(seatId: string): Promise<void> {
 
 	if (error) throw error;
 }
+
+// ─── Active session tracking ──────────────────────────────────────────────────
+
+export type BuyIn = Tables<'buy_ins'>;
+export type StackEvent = Tables<'stack_events'>;
+
+/**
+ * Record a buy-in for a player in an active session.
+ * - Inserts a buy_ins row.
+ * - Writes a stack_events snapshot row.
+ * - If the seat's stack is currently null (first buy-in), seeds it to the buy-in amount.
+ */
+export async function recordBuyIn({
+	seatId,
+	sessionId,
+	playerId,
+	amount
+}: {
+	seatId: string;
+	sessionId: string;
+	playerId: string;
+	amount: number;
+}): Promise<void> {
+	// Insert the buy-in
+	const { error: buyInError } = await supabase
+		.from('buy_ins')
+		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount });
+
+	if (buyInError) throw buyInError;
+
+	// Write a stack_events snapshot
+	const { error: eventError } = await supabase
+		.from('stack_events')
+		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount, type: 'snapshot' });
+
+	if (eventError) throw eventError;
+
+	// Seed stack to buy-in amount if it's the player's first buy-in (stack is null)
+	const { data: seat } = await supabase
+		.from('seats')
+		.select('stack')
+		.eq('id', seatId)
+		.single();
+
+	if (seat?.stack === null) {
+		const { error: stackError } = await supabase
+			.from('seats')
+			.update({ stack: amount })
+			.eq('id', seatId);
+
+		if (stackError) throw stackError;
+	}
+}
+
+/**
+ * Update a player's stack to an absolute value.
+ * - Updates seats.stack.
+ * - Writes a stack_events snapshot row.
+ */
+export async function updateStack({
+	seatId,
+	sessionId,
+	playerId,
+	stack
+}: {
+	seatId: string;
+	sessionId: string;
+	playerId: string;
+	stack: number;
+}): Promise<void> {
+	const { error: seatError } = await supabase
+		.from('seats')
+		.update({ stack })
+		.eq('id', seatId);
+
+	if (seatError) throw seatError;
+
+	const { error: eventError } = await supabase
+		.from('stack_events')
+		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount: stack, type: 'snapshot' });
+
+	if (eventError) throw eventError;
+}
+
+/**
+ * Load total buy-ins per player for a session.
+ * Returns a Record<playerId, totalKr>.
+ */
+export async function loadBuyInTotals(sessionId: string): Promise<Record<string, number>> {
+	const { data, error } = await supabase
+		.from('buy_ins')
+		.select('player_id, amount')
+		.eq('session_id', sessionId);
+
+	if (error) throw error;
+
+	const totals: Record<string, number> = {};
+	for (const row of data ?? []) {
+		totals[row.player_id] = (totals[row.player_id] ?? 0) + row.amount;
+	}
+	return totals;
+}

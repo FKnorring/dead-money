@@ -28,6 +28,9 @@ export {
 	loadSeats,
 	upsertSeat,
 	claimSeat,
-	removeSeat
+	removeSeat,
+	recordBuyIn,
+	updateStack,
+	loadBuyInTotals
 } from './session';
-export type { Session, Player, Seat } from './session';
+export type { Session, Player, Seat, BuyIn, StackEvent } from './session';
