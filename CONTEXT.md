@@ -1,4 +1,4 @@
-# pokr
+# dead-money
 
 A real-time web app for tracking No-Limit Hold'em home cash games — buy-ins, stacks, and settlements — across a recurring group of players.
 

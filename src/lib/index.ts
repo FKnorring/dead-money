@@ -14,3 +14,7 @@ export { krToBb, bbToKr } from './chips';
 export type { SeatResult, Transfer } from './settlement';
 export type { NetInput } from './net';
 export type { SessionConfig } from './chips';
+
+// Supabase client + types
+export { supabase } from './supabaseClient';
+export type { Database, Tables, Enums } from './database.types';
