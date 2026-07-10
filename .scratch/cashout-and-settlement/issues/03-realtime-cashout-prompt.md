@@ -1,6 +1,6 @@
 # 03 — Realtime cash-out prompt on session end
 
-Status: ready-for-agent
+Status: completed
 
 ## Source
 
