@@ -6,14 +6,17 @@ export const load: PageLoad = async () => {
 	// If any lobby or active session exists, redirect straight to it
 	const { data: active } = await supabase
 		.from('sessions')
-		.select('id')
+		.select('id, state')
 		.in('state', ['lobby', 'active'])
 		.order('created_at', { ascending: false })
 		.limit(1)
 		.maybeSingle();
 
 	if (active) {
-		redirect(307, `/session/${active.id}`);
+		const dest = active.state === 'active'
+			? `/session/${active.id}/play`
+			: `/session/${active.id}`;
+		redirect(307, dest);
 	}
 
 	// Otherwise load recent closed sessions for the history list

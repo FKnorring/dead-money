@@ -245,6 +245,48 @@ test('host cashes out players and ends the session; settlement screen shows corr
 	await page2.context().close();
 });
 
+test('refreshing the lobby URL while session is active redirects to /play', async ({ page, browser }) => {
+	// Create a session, add a player, start it so state = 'active'
+	const sessionUrl = await createSessionViaUI(page, 'E2E-Host-E');
+	const sessionId = sessionIdFromUrl(sessionUrl);
+	createdSessionIds.push(sessionId);
+
+	await addPlayerViaHostSheet(page, 'E2E-Player-E');
+	const page2 = await joinAsPlayer(browser, sessionUrl, 'E2E-Player-E');
+	await expect(page.getByText('Ready ✓')).toHaveCount(2, { timeout: 8000 });
+	await page.getByRole('button', { name: /Start Game/ }).click();
+	await page.waitForURL(/\/play$/, { timeout: 10000 });
+
+	// Now simulate a page refresh by navigating directly to the lobby URL
+	await page.goto(`/session/${sessionId}`);
+
+	// The server-side load should detect state=active and redirect to /play
+	await page.waitForURL(/\/play$/, { timeout: 10000 });
+	await expect(page.getByRole('button', { name: '1×' })).toBeVisible({ timeout: 8000 });
+
+	await page2.context().close();
+});
+
+test('home screen redirects directly to /play when the only open session is already active', async ({ page, browser }) => {
+	// Create a session, add a player, start it
+	const sessionUrl = await createSessionViaUI(page, 'E2E-Host-F');
+	const sessionId = sessionIdFromUrl(sessionUrl);
+	createdSessionIds.push(sessionId);
+
+	await addPlayerViaHostSheet(page, 'E2E-Player-F');
+	const page2 = await joinAsPlayer(browser, sessionUrl, 'E2E-Player-F');
+	await expect(page.getByText('Ready ✓')).toHaveCount(2, { timeout: 8000 });
+	await page.getByRole('button', { name: /Start Game/ }).click();
+	await page.waitForURL(/\/play$/, { timeout: 10000 });
+
+	// Navigate to home — should bounce straight to /play, not the lobby
+	await page.goto('/');
+	await page.waitForURL(/\/play$/, { timeout: 10000 });
+	await expect(page.getByRole('button', { name: '1×' })).toBeVisible({ timeout: 8000 });
+
+	await page2.context().close();
+});
+
 test('leaderboard loads and shows correct structure', async ({ page }) => {
 	await page.goto('/leaderboard');
 	await expect(page.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
