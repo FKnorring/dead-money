@@ -286,7 +286,7 @@ export async function closeSession(sessionId: string): Promise<void> {
 
 /**
  * Build a Swish deep-link for a payment.
- * Format: swish://payment?payee=<swishNumber>&amount=<amount>&message=Poker+<date>
+ * Format: https://app.swish.nu/1/p/sw/?sw=<number>&amt=<amount>&cur=SEK&msg=<message>&edit=amt%2Cmsg&src=qr
  *
  * @param swishNumber  The payee's Swish number (digits only, e.g. "0701234567")
  * @param amount       Amount in kr (integer)
@@ -301,5 +301,6 @@ export function buildSwishLink({
 	amount: number;
 	date: string;
 }): string {
-	return `swish://payment?payee=${swishNumber}&amount=${amount}&message=Poker+${date}`;
+	const msg = encodeURIComponent(`Poker ${date}`);
+	return `https://app.swish.nu/1/p/sw/?sw=${swishNumber}&amt=${amount}&cur=SEK&msg=${msg}&edit=amt%2Cmsg&src=qr`;
 }
