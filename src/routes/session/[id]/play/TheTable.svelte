@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { PlayerRow, Sheet, NumberInput, Button } from '$lib';
-	import { calculateNet } from '$lib';
-	import { cashOutSeat, closeSession } from '$lib';
-	import type { Session, SeatWithPlayer } from '$lib';
+	import { PlayerRow, Sheet, NumberInput, Button } from "$lib";
+	import { calculateNet } from "$lib";
+	import { cashOutSeat, closeSession } from "$lib";
+	import type { Session, SeatWithPlayer } from "$lib";
 
 	interface Props {
 		session: Session;
@@ -10,11 +10,21 @@
 		buyInTotals: Record<string, number>;
 		myPlayerId: string | null;
 		isHost: boolean;
+		displayUnit: "kr" | "bb";
 		onCashOut?: () => void;
 		onSessionClose?: () => void;
 	}
 
-	let { session, seats, buyInTotals, myPlayerId, isHost, onCashOut, onSessionClose }: Props = $props();
+	let {
+		session,
+		seats,
+		buyInTotals,
+		myPlayerId,
+		isHost,
+		displayUnit,
+		onCashOut,
+		onSessionClose,
+	}: Props = $props();
 
 	interface SeatRow {
 		seat: SeatWithPlayer;
@@ -24,24 +34,30 @@
 
 	const activeRows = $derived(
 		seats
-			.filter(s => !s.cashed_out)
+			.filter((s) => !s.cashed_out)
 			.map((seat): SeatRow => {
 				const totalBuyIns = buyInTotals[seat.player_id] ?? 0;
-				const net = calculateNet({ totalBuyIns, finalStack: seat.stack });
+				const net = calculateNet({
+					totalBuyIns,
+					finalStack: seat.stack,
+				});
 				return { seat, net, totalBuyIns };
 			})
-			.sort((a, b) => b.net - a.net)
+			.sort((a, b) => b.net - a.net),
 	);
 
 	const cashedOutRows = $derived(
 		seats
-			.filter(s => s.cashed_out)
+			.filter((s) => s.cashed_out)
 			.map((seat): SeatRow => {
 				const totalBuyIns = buyInTotals[seat.player_id] ?? 0;
-				const net = calculateNet({ totalBuyIns, finalStack: seat.final_stack });
+				const net = calculateNet({
+					totalBuyIns,
+					finalStack: seat.final_stack,
+				});
 				return { seat, net, totalBuyIns };
 			})
-			.sort((a, b) => b.net - a.net)
+			.sort((a, b) => b.net - a.net),
 	);
 
 	let cashedOutExpanded = $state(false);
@@ -63,7 +79,10 @@
 		if (!cashOutTarget || cashOutAmount === null || cashingOut) return;
 		cashingOut = true;
 		try {
-			await cashOutSeat({ seatId: cashOutTarget.id, finalStack: cashOutAmount });
+			await cashOutSeat({
+				seatId: cashOutTarget.id,
+				finalStack: cashOutAmount,
+			});
 			cashOutSheetOpen = false;
 			cashOutTarget = null;
 			cashOutAmount = null;
@@ -79,11 +98,11 @@
 	let closingSession = $state(false);
 	let finalStackInputs = $state<Record<string, number | null>>({});
 
-	const uncashedOutSeats = $derived(seats.filter(s => !s.cashed_out));
+	const uncashedOutSeats = $derived(seats.filter((s) => !s.cashed_out));
 
 	function openEndSessionSheet() {
 		const inputs: Record<string, number | null> = {};
-		for (const s of seats.filter(seat => !seat.cashed_out)) {
+		for (const s of seats.filter((seat) => !seat.cashed_out)) {
 			inputs[s.id] = s.stack ?? null;
 		}
 		finalStackInputs = inputs;
@@ -96,9 +115,18 @@
 		try {
 			// Finalize any uncashed seats that have a stack value entered
 			const cashOutPromises = seats
-				.filter(s => !s.cashed_out)
-				.filter(s => finalStackInputs[s.id] !== null && finalStackInputs[s.id] !== undefined)
-				.map(s => cashOutSeat({ seatId: s.id, finalStack: finalStackInputs[s.id]! }));
+				.filter((s) => !s.cashed_out)
+				.filter(
+					(s) =>
+						finalStackInputs[s.id] !== null &&
+						finalStackInputs[s.id] !== undefined,
+				)
+				.map((s) =>
+					cashOutSeat({
+						seatId: s.id,
+						finalStack: finalStackInputs[s.id]!,
+					}),
+				);
 			await Promise.all(cashOutPromises);
 			await closeSession(session.id);
 			// Realtime session subscription will redirect all clients to /end
@@ -111,23 +139,30 @@
 </script>
 
 <div class="flex flex-col gap-4 p-5 pb-24">
-
 	<!-- ── Active seats ───────────────────────────────────────────────────── -->
 	<section>
-		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest mb-3">
+		<h2
+			class="text-text-muted text-xs font-semibold uppercase tracking-widest mb-3"
+		>
 			At the Table · {activeRows.length}
 		</h2>
 
 		{#if activeRows.length === 0}
-			<p class="text-text-muted text-sm text-center py-4">No active players</p>
+			<p class="text-text-muted text-sm text-center py-4">
+				No active players
+			</p>
 		{:else}
-			<div class="bg-surface rounded-card divide-y divide-border overflow-hidden">
+			<div
+				class="bg-surface rounded-card divide-y divide-border overflow-hidden"
+			>
 				{#each activeRows as { seat, net, totalBuyIns } (seat.id)}
 					<PlayerRow
 						name={seat.players.name}
 						{totalBuyIns}
 						stack={seat.stack}
 						{net}
+						{session}
+						{displayUnit}
 						isYou={seat.player_id === myPlayerId}
 					>
 						{#snippet trailing()}
@@ -152,20 +187,26 @@
 		<section>
 			<button
 				class="w-full flex items-center justify-between text-text-muted text-xs font-semibold uppercase tracking-widest mb-3 hover:text-text transition-colors"
-				onclick={() => { cashedOutExpanded = !cashedOutExpanded; }}
+				onclick={() => {
+					cashedOutExpanded = !cashedOutExpanded;
+				}}
 			>
 				<span>Cashed Out · {cashedOutRows.length}</span>
-				<span>{cashedOutExpanded ? '▲' : '▼'}</span>
+				<span>{cashedOutExpanded ? "▲" : "▼"}</span>
 			</button>
 
 			{#if cashedOutExpanded}
-				<div class="bg-surface rounded-card divide-y divide-border overflow-hidden opacity-60">
+				<div
+					class="bg-surface rounded-card divide-y divide-border overflow-hidden opacity-60"
+				>
 					{#each cashedOutRows as { seat, net, totalBuyIns } (seat.id)}
 						<PlayerRow
 							name={seat.players.name}
 							{totalBuyIns}
 							stack={seat.final_stack}
 							{net}
+							{session}
+							{displayUnit}
 							isYou={seat.player_id === myPlayerId}
 						/>
 					{/each}
@@ -190,9 +231,14 @@
 
 <!-- ── CashOut sheet ──────────────────────────────────────────────────────── -->
 {#if cashOutTarget}
-	<Sheet bind:open={cashOutSheetOpen} title="Cash out {cashOutTarget.players.name}?">
+	<Sheet
+		bind:open={cashOutSheetOpen}
+		title="Cash out {cashOutTarget.players.name}?"
+	>
 		<div class="flex flex-col gap-3">
-			<p class="text-text-muted text-sm">Enter their final stack to lock in the result.</p>
+			<p class="text-text-muted text-sm">
+				Enter their final stack to lock in the result.
+			</p>
 			<NumberInput
 				bind:value={cashOutAmount}
 				placeholder="Final stack (kr)"
@@ -202,14 +248,18 @@
 			<div class="flex gap-3">
 				<button
 					class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium"
-					onclick={() => { cashOutSheetOpen = false; cashOutTarget = null; cashOutAmount = null; }}
-				>Cancel</button>
+					onclick={() => {
+						cashOutSheetOpen = false;
+						cashOutTarget = null;
+						cashOutAmount = null;
+					}}>Cancel</button
+				>
 				<button
 					class="flex-1 h-tap rounded-sm bg-red text-text text-sm font-semibold disabled:opacity-40"
 					disabled={cashOutAmount === null || cashingOut}
 					onclick={handleCashOut}
 				>
-					{cashingOut ? 'Locking…' : 'Confirm Cash Out'}
+					{cashingOut ? "Locking…" : "Confirm Cash Out"}
 				</button>
 			</div>
 		{/snippet}
@@ -229,12 +279,18 @@
 			<div class="flex flex-col gap-3">
 				{#each uncashedOutSeats as seat (seat.id)}
 					<div class="flex flex-col gap-1">
-						<label for="final-stack-{seat.id}" class="text-sm text-text font-medium">{seat.players.name}</label>
+						<label
+							for="final-stack-{seat.id}"
+							class="text-sm text-text font-medium"
+							>{seat.players.name}</label
+						>
 						<NumberInput
 							id="final-stack-{seat.id}"
 							bind:value={
 								() => finalStackInputs[seat.id] ?? null,
-								(v) => { finalStackInputs[seat.id] = v; }
+								(v) => {
+									finalStackInputs[seat.id] = v;
+								}
 							}
 							placeholder="Final stack (kr)"
 						/>
@@ -242,21 +298,25 @@
 				{/each}
 			</div>
 		{:else}
-			<p class="text-text-muted text-sm">All players have cashed out. Ready to close the session.</p>
+			<p class="text-text-muted text-sm">
+				All players have cashed out. Ready to close the session.
+			</p>
 		{/if}
 	</div>
 	{#snippet footer()}
 		<div class="flex gap-3">
 			<button
 				class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium"
-				onclick={() => { endSessionSheetOpen = false; }}
-			>Cancel</button>
+				onclick={() => {
+					endSessionSheetOpen = false;
+				}}>Cancel</button
+			>
 			<button
 				class="flex-1 h-tap rounded-sm bg-red text-text text-sm font-semibold disabled:opacity-40"
 				disabled={closingSession}
 				onclick={handleEndSession}
 			>
-				{closingSession ? 'Closing…' : 'End Session'}
+				{closingSession ? "Closing…" : "End Session"}
 			</button>
 		</div>
 	{/snippet}

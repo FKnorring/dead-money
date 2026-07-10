@@ -1,30 +1,55 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
-	import { netClass as getNetClass, netSign as getNetSign } from '$lib/chips';
+	import type { Snippet } from "svelte";
+	import {
+		netClass as getNetClass,
+		netSign as getNetSign,
+		formatAmount,
+		type Session,
+	} from "$lib";
 
 	interface Props {
 		name: string;
 		totalBuyIns: number;
 		stack: number | null;
 		net: number;
+		session: Session;
+		displayUnit: "kr" | "bb";
 		isYou?: boolean;
 		trailing?: Snippet;
 	}
 
-	let { name, totalBuyIns, stack, net, isYou = false, trailing }: Props = $props();
+	let {
+		name,
+		totalBuyIns,
+		stack,
+		net,
+		session,
+		displayUnit,
+		isYou = false,
+		trailing,
+	}: Props = $props();
 
 	const netCls = $derived(getNetClass(net));
 	const netPfx = $derived(getNetSign(net));
+
+	function fmt(kr: number): string {
+		return formatAmount(kr, displayUnit, session);
+	}
 </script>
 
 <div
 	class={[
-		'flex items-center justify-between gap-3 py-3 px-4',
-		isYou ? 'border-l-2 border-green pl-3' : '',
+		"flex items-center justify-between gap-3 py-3 px-4",
+		isYou ? "border-l-2 border-green pl-3" : "",
 	]}
 >
 	<!-- Name -->
-	<span class={['font-medium truncate', isYou ? 'text-green-light' : 'text-text']}>
+	<span
+		class={[
+			"font-medium truncate",
+			isYou ? "text-green-light" : "text-text",
+		]}
+	>
 		{name}
 	</span>
 
@@ -32,10 +57,10 @@
 	<div class="flex items-center gap-4 shrink-0">
 		<div class="flex flex-col items-end gap-0.5">
 			<span class="tabular text-sm text-text-muted">
-				{stack !== null ? `${stack} kr` : '—'}
+				{stack !== null ? `${fmt(stack)}` : "—"}
 			</span>
-			<span class={['tabular text-sm font-semibold', netCls]}>
-				{netPfx}{net} kr
+			<span class={["tabular text-sm font-semibold", netCls]}>
+				{netPfx}{fmt(net)}
 			</span>
 		</div>
 		{#if trailing}
