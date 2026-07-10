@@ -37,8 +37,6 @@ export {
 	startSession,
 	closeSession,
 	loadSession,
-	searchPlayers,
-	findOrCreatePlayer,
 	loadSeats,
 	upsertSeat,
 	claimSeat,
@@ -46,12 +44,20 @@ export {
 	cashOutSeat,
 	recordBuyIn,
 	updateStack,
+	buildSwishLink,
+} from './session';
+export type { Session, Seat, SeatWithPlayer, BuyIn, StackEvent } from './session';
+
+// Player registry
+export { searchPlayers, findOrCreatePlayer, updatePlayerSwish } from './players';
+export type { Player } from './players';
+
+// Session read-model / reporting queries
+export {
 	loadBuyInTotals,
 	loadBuyInCounts,
 	loadStackLows,
-	updatePlayerSwish,
-	buildSwishLink,
 	loadLeaderboardData,
 	loadPlayerHistory,
-} from './session';
-export type { Session, Player, Seat, SeatWithPlayer, BuyIn, StackEvent, PlayerSessionRow } from './session';
+} from './sessionReads';
+export type { PlayerSessionRow } from './sessionReads';
