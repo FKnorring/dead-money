@@ -215,31 +215,39 @@ async function emitStackSnapshot({
 /**
  * Record a buy-in for a player in an active session.
  * - Inserts a buy_ins row.
- * - Writes a stack_events snapshot row.
- * - If the seat's stack is currently null (first buy-in), seeds it to the buy-in amount.
+ * - Updates seats.stack to newStack.
+ * - Writes a single stack_events snapshot row with amount = newStack (the resulting stack).
  */
 export async function recordBuyIn({
 	seatId,
 	sessionId,
 	playerId,
-	amount
+	amount,
+	newStack
 }: {
 	seatId: string;
 	sessionId: string;
 	playerId: string;
 	amount: number;
+	newStack: number;
 }): Promise<void> {
 	// Insert the buy-in.
-	// The DB trigger trg_seed_stack_on_first_buy_in atomically seeds seats.stack
-	// to this amount when stack is currently null (ADR-0003, migration 0002).
 	const { error: buyInError } = await supabase
 		.from('buy_ins')
 		.insert({ seat_id: seatId, session_id: sessionId, player_id: playerId, amount });
 
 	if (buyInError) throw buyInError;
 
-	// Write a stack_events snapshot
-	await emitStackSnapshot({ seatId, sessionId, playerId, amount });
+	// Update seats.stack to the resulting stack after this buy-in.
+	const { error: seatError } = await supabase
+		.from('seats')
+		.update({ stack: newStack })
+		.eq('id', seatId);
+
+	if (seatError) throw seatError;
+
+	// Write a single stack_events snapshot with the actual resulting stack.
+	await emitStackSnapshot({ seatId, sessionId, playerId, amount: newStack });
 }
 
 /**
