@@ -1,6 +1,6 @@
 # 03 — Award icon field
 
-Status: ready-for-agent
+Status: completed
 
 ## What to build
 

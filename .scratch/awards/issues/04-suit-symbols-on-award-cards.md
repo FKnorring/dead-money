@@ -1,6 +1,6 @@
 # 04 — Suit symbols on award cards with animated entrance
 
-Status: ready-for-agent
+Status: completed
 
 ## What to build
 

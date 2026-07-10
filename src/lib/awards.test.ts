@@ -20,7 +20,6 @@ const FOUR_PLAYERS: AwardInput[] = [
 	{
 		name: 'Anna',
 		net: 450,
-		totalBuyIns: 200,
 		finalStack: 650,
 		buyInCount: 1,
 		buyInAmount: 200,
@@ -30,7 +29,6 @@ const FOUR_PLAYERS: AwardInput[] = [
 	{
 		name: 'Bo',
 		net: -650,
-		totalBuyIns: 800,
 		finalStack: 150,
 		buyInCount: 4,
 		buyInAmount: 200,
@@ -40,7 +38,6 @@ const FOUR_PLAYERS: AwardInput[] = [
 	{
 		name: 'Chloe',
 		net: 0,
-		totalBuyIns: 200,
 		finalStack: 200,
 		buyInCount: 1,
 		buyInAmount: 200,
@@ -50,7 +47,6 @@ const FOUR_PLAYERS: AwardInput[] = [
 	{
 		name: 'Dan',
 		net: -400,
-		totalBuyIns: 400,
 		finalStack: 0,
 		buyInCount: 2,
 		buyInAmount: 200,
@@ -119,12 +115,13 @@ describe('calculateAwards', () => {
 		expect(award?.stat).toBe('+600 kr');
 	});
 
-	it('each award has non-empty title, description, and stat', () => {
+	it('each award has non-empty title, description, stat, and icon', () => {
 		const awards = calculateAwards(FOUR_PLAYERS);
 		for (const a of awards) {
 			expect(a.title.length).toBeGreaterThan(0);
 			expect(a.description.length).toBeGreaterThan(0);
 			expect(a.stat.length).toBeGreaterThan(0);
+			expect(a.icon.length).toBeGreaterThan(0);
 		}
 	});
 });
@@ -138,7 +135,6 @@ describe('calculateAwards — tie for biggest-winner', () => {
 		{
 			name: 'Erik',
 			net: 300,
-			totalBuyIns: 200,
 			finalStack: 500,
 			buyInCount: 1,
 			buyInAmount: 200,
@@ -148,7 +144,6 @@ describe('calculateAwards — tie for biggest-winner', () => {
 		{
 			name: 'Fiona',
 			net: 300,
-			totalBuyIns: 200,
 			finalStack: 500,
 			buyInCount: 1,
 			buyInAmount: 200,
@@ -158,7 +153,6 @@ describe('calculateAwards — tie for biggest-winner', () => {
 		{
 			name: 'Gunnar',
 			net: -600,
-			totalBuyIns: 600,
 			finalStack: 0,
 			buyInCount: 3,
 			buyInAmount: 200,

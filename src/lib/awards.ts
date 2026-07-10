@@ -1,7 +1,6 @@
 export interface AwardInput {
 	name: string;
 	net: number;
-	totalBuyIns: number;
 	finalStack: number | null;
 	buyInCount: number;
 	/** The standard single buy-in amount (used as fallback comeback baseline). */
@@ -22,14 +21,20 @@ export interface Award {
 	title: string;
 	description: string;
 	stat: string;
+	icon: string;
+}
+
+function formatSigned(n: number): string {
+	return `${n >= 0 ? '+' : ''}${n} kr`;
 }
 
 // ── Copy pools (pick one variant per award per session) ───────────────────────
 // Each pool has enough variety that repeated sessions feel fresh.
 
-const COPY: Record<string, { title: string; descriptions: string[] }> = {
+const COPY: Record<string, { title: string; icon: string; descriptions: string[] }> = {
 	'biggest-winner': {
 		title: 'The Whale',
+		icon: '🐋',
 		descriptions: [
 			"Beginner's luck or genuine skill? Either way, collect your chips.",
 			'The fish were biting tonight and somehow you were holding the rod.',
@@ -40,6 +45,7 @@ const COPY: Record<string, { title: string; descriptions: string[] }> = {
 	},
 	'biggest-loser': {
 		title: 'The Philanthropist',
+		icon: '💸',
 		descriptions: [
 			'Your generosity kept the game alive. The table thanks you sincerely.',
 			"You didn't lose money. You redistributed it. Very noble.",
@@ -50,6 +56,7 @@ const COPY: Record<string, { title: string; descriptions: string[] }> = {
 	},
 	'break-even': {
 		title: 'The Philosopher',
+		icon: '🤷',
 		descriptions: [
 			'Congratulations on your net-zero. A masterpiece of pointlessness.',
 			'You sat here for hours and ended up exactly where you started. Inspiring.',
@@ -60,6 +67,7 @@ const COPY: Record<string, { title: string; descriptions: string[] }> = {
 	},
 	'most-buyins': {
 		title: 'The ATM',
+		icon: '🏧',
 		descriptions: [
 			'Your dedication to losing money is unmatched. The table thanks you.',
 			"Four buy-ins. Bold strategy. Let's see if it pays off — oh wait, it didn't.",
@@ -70,6 +78,7 @@ const COPY: Record<string, { title: string; descriptions: string[] }> = {
 	},
 	'last-stand': {
 		title: 'The Final Table',
+		icon: '🕯️',
 		descriptions: [
 			"Last one standing. Whether that's heroic or just stubborn is unclear.",
 			'You outlasted everyone. Unfortunately "outlasted" and "outplayed" are different words.',
@@ -80,6 +89,7 @@ const COPY: Record<string, { title: string; descriptions: string[] }> = {
 	},
 	'first-bust': {
 		title: 'The Pioneer',
+		icon: '💀',
 		descriptions: [
 			'First to go. You led the charge into defeat so the rest of us could follow.',
 			"Out before the first break. You played fast and loose and the cards said: noted.",
@@ -90,6 +100,7 @@ const COPY: Record<string, { title: string; descriptions: string[] }> = {
 	},
 	'biggest-comeback': {
 		title: 'The Comeback Kid',
+		icon: '🔥',
 		descriptions: [
 			'Dug out of a hole and clawed back. Grudging respect. Extremely grudging.',
 			"Down bad and came back swinging. The J7 would be proud.",
@@ -131,6 +142,7 @@ export function calculateAwards(seats: AwardInput[]): Award[] {
 				title: copy?.title ?? id,
 				description: pickDescription(id, w.name),
 				stat: stat(w),
+				icon: copy?.icon ?? '🃏',
 			});
 		}
 	}
@@ -163,16 +175,10 @@ export function calculateAwards(seats: AwardInput[]): Award[] {
 			.sort()
 			.at(-1)!;
 		const lastStands = seatsWithCashOut.filter((s) => s.cashedOutAt === latestTime);
-		emit('last-stand', lastStands, (w) => {
-			const sign = w.net >= 0 ? '+' : '';
-			return `${sign}${w.net} kr`;
-		});
+		emit('last-stand', lastStands, (w) => formatSigned(w.net));
 	} else {
 		// No cashout timestamps — fall back to the last-seated player
-		emit('last-stand', [seats[seats.length - 1]], (w) => {
-			const sign = w.net >= 0 ? '+' : '';
-			return `${sign}${w.net} kr`;
-		});
+		emit('last-stand', [seats[seats.length - 1]], (w) => formatSigned(w.net));
 	}
 
 	// ── first-bust: first to cash out with negative net ──────────────────────
@@ -196,15 +202,11 @@ export function calculateAwards(seats: AwardInput[]): Award[] {
 		return { seat: s, swing: (s.finalStack ?? 0) - baseline };
 	});
 	const maxSwing = Math.max(...swings.map((x) => x.swing));
-	const comebackWinners = swings
-		.filter((x) => x.swing === maxSwing)
-		.map((x) => x.seat);
-	emit('biggest-comeback', comebackWinners, (w) => {
-		const baseline = w.stackLow ?? w.buyInAmount;
-		const swing = (w.finalStack ?? 0) - baseline;
-		const sign = swing >= 0 ? '+' : '';
-		return `${sign}${swing} kr`;
-	});
+	const comebackWinners = swings.filter((x) => x.swing === maxSwing);
+	const swingBySeat = new Map(swings.map((x) => [x.seat, x.swing]));
+	emit('biggest-comeback', comebackWinners.map((x) => x.seat), (w) =>
+		formatSigned(swingBySeat.get(w) ?? 0)
+	);
 
 	return awards;
 }

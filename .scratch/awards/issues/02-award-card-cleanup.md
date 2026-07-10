@@ -1,6 +1,6 @@
 # 02 — Award card cleanup
 
-Status: ready-for-agent
+Status: completed
 
 ## What to build
 

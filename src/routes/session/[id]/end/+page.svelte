@@ -78,10 +78,9 @@
 	const awards = $derived<Award[]>(
 		seatResults.length >= 2
 			? calculateAwards(
-					seatResults.map(({ seat, net, totalBuyIns }) => ({
+					seatResults.map(({ seat, net }) => ({
 						name: seat.players.name,
 						net,
-						totalBuyIns,
 						finalStack: seat.final_stack,
 						buyInCount: buyInCounts[seat.player_id] ?? 1,
 						buyInAmount: session.buy_in_amount,
@@ -108,6 +107,11 @@
 	function playerName(playerId: string): string {
 		return seats.find(s => s.player_id === playerId)?.players.name ?? playerId;
 	}
+
+	// ── Suit symbols for award cards (presentational) ─────────────────────────
+
+	const SUITS = ['♠', '♥', '♦', '♣'] as const;
+	function suitFor(i: number): string { return SUITS[i % 4]; }
 
 	// ── Add Swish number ──────────────────────────────────────────────────────
 
@@ -291,11 +295,12 @@
 					{#each awards as award, i (award.id + award.recipientName)}
 						<div
 							class="award-card bg-surface rounded-card p-4 flex flex-col gap-2 border border-border"
-							style="animation-delay: {i * 120}ms"
+							style="--card-delay: {i * 100}ms; animation-delay: {i * 100}ms"
 						>
+							<span class="award-suit" style="--card-delay: {i * 100}ms">{suitFor(i)}</span>
 							<div class="flex items-start justify-between gap-3">
 								<h3 class="font-display text-2xl tracking-wider leading-none text-gold-light">
-									{award.title}
+									{award.icon} {award.title}
 								</h3>
 								<span class="tabular text-xs text-text-muted font-medium shrink-0 mt-1">
 									{award.stat}
@@ -391,5 +396,23 @@
 	.award-card {
 		opacity: 0;
 		animation: award-reveal 450ms var(--ease-out-back, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
+	}
+
+	/* Suit symbol: independent entrance, slightly offset from card body */
+	@keyframes suit-drop {
+		0%   { opacity: 0; transform: translateY(-8px) scale(1.4); }
+		60%  { opacity: 1; transform: translateY(2px) scale(0.95); }
+		100% { opacity: 1; transform: translateY(0) scale(1); }
+	}
+
+	.award-suit {
+		display: block;
+		opacity: 0;
+		font-size: 1.5rem;
+		line-height: 1;
+		color: var(--color-gold-light, #d4a847);
+		animation: suit-drop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+		/* Slightly offset from the card body entrance */
+		animation-delay: calc(var(--card-delay, 0ms) + 80ms);
 	}
 </style>
