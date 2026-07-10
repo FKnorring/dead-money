@@ -6,10 +6,12 @@ export { default as Badge } from './components/ui/Badge.svelte';
 export { default as NumberInput } from './components/ui/NumberInput.svelte';
 export { default as PlayerRow } from './components/ui/PlayerRow.svelte';
 export { default as Sheet } from './components/ui/Sheet.svelte';
+export { default as StackChart } from './components/ui/StackChart.svelte';
+export { default as StackMultiChart } from './components/ui/StackMultiChart.svelte';
 
 // Domain utilities
-export { buildChart, nearestPoint } from './stackChart';
-export type { ChartPoint, ChartData } from './stackChart';
+export { buildChart, buildMultiChart, nearestPoint } from './stackChart';
+export type { ChartPoint, ChartData, MultiSeriesInput, MultiSeriesData, MultiChartData } from './stackChart';
 export { calculateSettlement } from './settlement';
 export { calculateNet } from './net';
 export { calculateAwards } from './awards';
@@ -57,6 +59,7 @@ export {
 	loadBuyInTotals,
 	loadBuyInCounts,
 	loadStackLows,
+	loadSessionTimelines,
 	loadLeaderboardData,
 	loadPlayerHistory,
 } from './sessionReads';

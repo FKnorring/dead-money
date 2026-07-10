@@ -127,6 +127,31 @@ export async function loadLeaderboardData(): Promise<LeaderboardRow[]> {
 }
 
 /**
+ * Load stack event timelines (snapshots) for all players in a session.
+ * Returns a Record<playerId, { amount, createdAt }[]> ordered by time asc.
+ */
+export async function loadSessionTimelines(
+	sessionId: string
+): Promise<Record<string, { amount: number; createdAt: string }[]>> {
+	const { data, error } = await supabase
+		.from('stack_events')
+		.select('player_id, amount, created_at')
+		.eq('session_id', sessionId)
+		.eq('type', 'snapshot')
+		.order('created_at');
+
+	if (error) throw error;
+
+	const timelines: Record<string, { amount: number; createdAt: string }[]> = {};
+	for (const row of data ?? []) {
+		const list = timelines[row.player_id] ?? [];
+		list.push({ amount: row.amount, createdAt: row.created_at });
+		timelines[row.player_id] = list;
+	}
+	return timelines;
+}
+
+/**
  * Load all closed sessions this player participated in, newest first.
  * Includes per-session buy-in totals and any stack_events snapshots for
  * rendering a timeline chart.

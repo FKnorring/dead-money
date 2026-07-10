@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { netClass as getNetClass, formatNet, formatPercent, buildChart, nearestPoint } from '$lib';
-	import type { PlayerSessionRow, ChartPoint } from '$lib';
+	import { netClass as getNetClass, formatNet, formatPercent, buildChart } from '$lib';
+	import { StackChart } from '$lib';
+	import type { PlayerSessionRow } from '$lib';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -27,26 +28,7 @@
 	}
 
 	// ── Stack timeline chart ──────────────────────────────────────────────────
-
-	// Chart dimensions (viewBox) — must match stackChart.ts defaults
-	const CHART_W = 320;
-	const CHART_H = 120;
-	const PAD_L = 40;  // space for y-axis labels
-	const PAD_R = 12;
-	const PAD_T = 12;
-	const PAD_B = 28;  // space for x-axis labels
-
-	// Tooltip state per session (keyed by sessionId)
-	let activePoint = $state<{ sessionId: string; point: ChartPoint } | null>(null);
-
-	function handleChartPointer(e: PointerEvent, sessionId: string, points: ChartPoint[]) {
-		const svg = (e.currentTarget as SVGSVGElement);
-		const rect = svg.getBoundingClientRect();
-		const svgX = (e.clientX - rect.left) * (CHART_W / rect.width);
-		activePoint = { sessionId, point: nearestPoint(svgX, points) };
-	}
-
-	function clearTooltip() { activePoint = null; }
+	// (chart rendering delegated to StackChart component)
 </script>
 
 <div class="min-h-dvh bg-bg text-text flex flex-col max-w-md mx-auto">
@@ -115,115 +97,10 @@
 					{#if chart}
 						<div class="border-t border-border px-4 py-3">
 							<p class="text-text-muted text-xs mb-2">Stack timeline</p>
-
-							<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-							<svg
-								role="img"
-								aria-label="Stack timeline for {session.sessionLabel ?? formatDateShort(session.sessionCreatedAt)}"
-								viewBox="0 0 {CHART_W} {CHART_H}"
-								class="w-full"
-								style="height: {CHART_H}px"
-								onpointermove={(e) => handleChartPointer(e, session.sessionId, chart.points)}
-								onpointerleave={clearTooltip}
-							>
-								<!-- Area fill -->
-								<path
-									d={chart.areaD}
-									fill="var(--color-green)"
-									opacity="0.15"
-								/>
-								<!-- Line -->
-								<path
-									d={chart.pathD}
-									fill="none"
-									stroke="var(--color-green-light)"
-									stroke-width="2"
-									stroke-linejoin="round"
-									stroke-linecap="round"
-								/>
-
-								<!-- Y-axis labels (min/max) -->
-								<text
-									x={PAD_L - 4}
-									y={PAD_T + 4}
-									text-anchor="end"
-									font-size="9"
-									fill="var(--color-text-muted)"
-									dominant-baseline="hanging"
-								>{Math.round(chart.yMax)}</text>
-								<text
-									x={PAD_L - 4}
-									y={CHART_H - PAD_B - 2}
-									text-anchor="end"
-									font-size="9"
-									fill="var(--color-text-muted)"
-									dominant-baseline="auto"
-								>{Math.round(chart.yMin)}</text>
-
-								<!-- X-axis first/last time labels -->
-								<text
-									x={PAD_L}
-									y={CHART_H - PAD_B + 6}
-									text-anchor="start"
-									font-size="9"
-									fill="var(--color-text-muted)"
-									dominant-baseline="hanging"
-								>{chart.points.at(0)!.label}</text>
-								<text
-									x={CHART_W - PAD_R}
-									y={CHART_H - PAD_B + 6}
-									text-anchor="end"
-									font-size="9"
-									fill="var(--color-text-muted)"
-									dominant-baseline="hanging"
-								>{chart.points.at(-1)!.label}</text>
-
-								<!-- Data points (invisible hit targets + visible dots) -->
-								{#each chart.points as pt}
-									<circle cx={pt.x} cy={pt.y} r="3" fill="var(--color-green-light)" />
-									<!-- Expanded touch target -->
-									<circle cx={pt.x} cy={pt.y} r="12" fill="transparent" />
-								{/each}
-
-								<!-- Active tooltip crosshair + label -->
-								{#if activePoint?.sessionId === session.sessionId}
-									{@const ap = activePoint.point}
-									<!-- Vertical crosshair -->
-									<line
-										x1={ap.x} y1={PAD_T}
-										x2={ap.x} y2={CHART_H - PAD_B}
-										stroke="var(--color-text-muted)"
-										stroke-width="1"
-										stroke-dasharray="3 2"
-										opacity="0.6"
-									/>
-									<!-- Dot highlight -->
-									<circle cx={ap.x} cy={ap.y} r="5" fill="var(--color-green-light)" />
-									<circle cx={ap.x} cy={ap.y} r="3" fill="var(--color-bg)" />
-									<!-- Tooltip bubble (keeps within bounds) -->
-									{@const tipX = ap.x + (ap.x > CHART_W * 0.65 ? -62 : 8)}
-									{@const tipY = Math.max(PAD_T, Math.min(ap.y - 18, CHART_H - PAD_B - 30))}
-									<rect
-										x={tipX - 4}
-										y={tipY - 2}
-										width="60"
-										height="22"
-										rx="4"
-										fill="var(--color-surface-high)"
-										stroke="var(--color-border)"
-										stroke-width="1"
-									/>
-									<text
-										x={tipX + 26}
-										y={tipY + 9}
-										text-anchor="middle"
-										font-size="10"
-										fill="var(--color-text)"
-										font-weight="600"
-										dominant-baseline="middle"
-									>{ap.amount} kr</text>
-								{/if}
-							</svg>
+							<StackChart
+								{chart}
+								ariaLabel="Stack timeline for {session.sessionLabel ?? formatDateShort(session.sessionCreatedAt)}"
+							/>
 						</div>
 					{:else if session.stackTimeline.length === 0}
 						<div class="border-t border-border px-4 py-2">

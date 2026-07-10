@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { calculateNet, calculateSettlement, formatAmount, netClass as getNetClass, netSign as getNetSign } from '$lib';
 	import { buildSwishLink, updatePlayerSwish } from '$lib';
-	import { calculateAwards } from '$lib';
+	import { calculateAwards, buildChart, buildMultiChart } from '$lib';
 	import { getMyPlayerId } from '$lib';
 	import { useSessionSync } from '$lib';
-	import { Sheet } from '$lib';
+	import { Sheet, StackChart, StackMultiChart } from '$lib';
 	import type { SeatWithPlayer } from '$lib';
 	import type { Transfer, Award } from '$lib';
 	import type { PageData } from './$types';
@@ -21,6 +21,8 @@
 	const stackLows: Record<string, number> = { ...data.stackLows };
 	// eslint-disable-next-line svelte/reactivity -- static at load time
 	const buyInCounts: Record<string, number> = { ...data.buyInCounts };
+	// eslint-disable-next-line svelte/reactivity -- static at load time; stack events are immutable once session closes
+	const stackTimelines: Record<string, { amount: number; createdAt: string }[]> = { ...data.stackTimelines };
 
 	let myPlayerId = $state<string | null>(null);
 
@@ -107,6 +109,28 @@
 	function playerName(playerId: string): string {
 		return seats.find(s => s.player_id === playerId)?.players.name ?? playerId;
 	}
+
+	// ── Stack charts ─────────────────────────────────────────────────────────
+
+	const playerCharts = $derived(
+		seatResults
+			.map(({ seat }) => {
+				const timeline = stackTimelines[seat.player_id] ?? [];
+				return { seat, chart: buildChart(timeline) };
+			})
+			.filter(entry => entry.chart !== null) as { seat: SeatWithPlayer; chart: NonNullable<ReturnType<typeof buildChart>> }[]
+	);
+
+	const multiChart = $derived.by(() => {
+		const inputs = seatResults
+			.filter(({ seat }) => (stackTimelines[seat.player_id]?.length ?? 0) >= 2)
+			.map(({ seat }) => ({
+				id: seat.player_id,
+				label: seat.players.name,
+				timeline: stackTimelines[seat.player_id],
+			}));
+		return inputs.length >= 2 ? buildMultiChart(inputs) : null;
+	});
 
 	// ── Suit symbols for award cards (presentational) ─────────────────────────
 
@@ -312,6 +336,49 @@
 							<p class="text-text-muted text-xs leading-relaxed">
 								{award.description}
 							</p>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{/if}
+
+		<!-- ── Stack history charts ─────────────────────────────────────────── -->
+		{#if playerCharts.length > 0}
+			<div class="flex items-center gap-3">
+				<div class="flex-1 border-t border-border"></div>
+				<span class="text-text-muted text-base leading-none">♠ ♣ ♥ ♦</span>
+				<div class="flex-1 border-t border-border"></div>
+			</div>
+
+			<section>
+				<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest mb-3">
+					Stack history
+				</h2>
+
+				<!-- Merged chart (all players) -->
+				{#if multiChart}
+					<div class="bg-surface rounded-card border border-border overflow-hidden mb-3">
+						<div class="px-4 pt-3 pb-1">
+							<p class="text-text-muted text-xs mb-2">All players</p>
+							<StackMultiChart
+								chart={multiChart}
+								ariaLabel="All players stack history"
+							/>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Per-player charts -->
+				<div class="flex flex-col gap-3">
+					{#each playerCharts as { seat, chart } (seat.id)}
+						<div class="bg-surface rounded-card border border-border overflow-hidden">
+							<div class="px-4 pt-3 pb-2">
+								<p class="text-text text-xs font-medium mb-2">{seat.players.name}</p>
+								<StackChart
+									{chart}
+									ariaLabel="Stack history for {seat.players.name}"
+								/>
+							</div>
 						</div>
 					{/each}
 				</div>

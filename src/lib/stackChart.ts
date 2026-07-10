@@ -19,6 +19,89 @@ export interface ChartData {
 	areaD: string;
 	yMin: number;
 	yMax: number;
+	/** ViewBox dimensions used to build this chart (for rendering). */
+	w: number;
+	h: number;
+	padL: number;
+	padR: number;
+	padT: number;
+	padB: number;
+}
+
+// ── Multi-series chart (merged view) ───────────────────────────────────────
+
+export interface MultiSeriesInput {
+	id: string;
+	label: string;
+	timeline: { amount: number; createdAt: string }[];
+}
+
+export interface MultiSeriesData {
+	id: string;
+	label: string;
+	points: ChartPoint[];
+	pathD: string;
+}
+
+export interface MultiChartData {
+	series: MultiSeriesData[];
+	yMin: number;
+	yMax: number;
+	w: number;
+	h: number;
+	padL: number;
+	padR: number;
+	padT: number;
+	padB: number;
+}
+
+/**
+ * Build SVG chart data for multiple series on a shared y-axis.
+ * All series are aligned on a normalised x-axis (0..1 by index position).
+ * Returns null if no series has >= 2 points.
+ */
+export function buildMultiChart(
+	inputs: MultiSeriesInput[],
+	dims?: { w?: number; h?: number; padL?: number; padR?: number; padT?: number; padB?: number }
+): MultiChartData | null {
+	const eligible = inputs.filter(s => s.timeline.length >= 2);
+	if (eligible.length === 0) return null;
+
+	const w = dims?.w ?? CHART_W;
+	const h = dims?.h ?? CHART_H;
+	const padL = dims?.padL ?? PAD_L;
+	const padR = dims?.padR ?? PAD_R;
+	const padT = dims?.padT ?? PAD_T;
+	const padB = dims?.padB ?? PAD_B;
+
+	// Shared y-axis across all series
+	const allAmounts = eligible.flatMap(s => s.timeline.map(t => t.amount));
+	const rawMin = Math.min(...allAmounts);
+	const rawMax = Math.max(...allAmounts);
+	const padding = Math.max((rawMax - rawMin) * 0.15, 20);
+	const yMin = Math.max(0, rawMin - padding);
+	const yMax = rawMax + padding;
+	const yRange = yMax - yMin || 1;
+
+	const plotW = w - padL - padR;
+	const plotH = h - padT - padB;
+
+	const series: MultiSeriesData[] = eligible.map(input => {
+		const points: ChartPoint[] = input.timeline.map((t, i) => {
+			const nx = i / (input.timeline.length - 1);
+			const ny = 1 - (t.amount - yMin) / yRange;
+			return {
+				x: padL + nx * plotW,
+				y: padT + ny * plotH,
+				amount: t.amount,
+				label: new Date(t.createdAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }),
+			};
+		});
+		const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+		return { id: input.id, label: input.label, points, pathD };
+	});
+
+	return { series, yMin, yMax, w, h, padL, padR, padT, padB };
 }
 
 /**
@@ -65,7 +148,7 @@ export function buildChart(
 	const baseY = (padT + plotH).toFixed(1);
 	const areaD = `${pathD} L ${points.at(-1)!.x.toFixed(1)} ${baseY} L ${padL} ${baseY} Z`;
 
-	return { points, pathD, areaD, yMin, yMax };
+	return { points, pathD, areaD, yMin, yMax, w, h, padL, padR, padT, padB };
 }
 
 /**
