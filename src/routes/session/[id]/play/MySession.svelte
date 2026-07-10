@@ -1,22 +1,34 @@
 <script lang="ts">
-	import { ChipButton, Sheet, NumberInput } from '$lib';
-	import { recordBuyIn, updateStack, cashOutSeat } from '$lib';
-	import { calculateNet, formatAmount, netClass as getNetClass, netSign as getNetSign } from '$lib';
-	import type { Session, SeatWithPlayer } from '$lib';
+	import { ChipButton, Sheet, NumberInput } from "$lib";
+	import { recordBuyIn, updateStack, cashOutSeat } from "$lib";
+	import {
+		calculateNet,
+		formatAmount,
+		netClass as getNetClass,
+		netSign as getNetSign,
+	} from "$lib";
+	import type { Session, SeatWithPlayer } from "$lib";
 
 	interface Props {
 		session: Session;
 		/** The seat being managed (own seat, or a seat the host chose) */
 		seat: SeatWithPlayer;
 		totalBuyIns: number;
-		displayUnit: 'kr' | 'bb';
+		displayUnit: "kr" | "bb";
 		/** Called when the seat's stack changes so the parent can update its state */
 		onStackChange?: () => void;
 		/** Called specifically after a successful cash-out */
 		onCashOut?: () => void;
 	}
 
-	let { session, seat, totalBuyIns, displayUnit, onStackChange, onCashOut }: Props = $props();
+	let {
+		session,
+		seat,
+		totalBuyIns,
+		displayUnit,
+		onStackChange,
+		onCashOut,
+	}: Props = $props();
 
 	const buyIn = $derived(session.buy_in_amount);
 	const bbSize = $derived(session.bb_size);
@@ -24,29 +36,29 @@
 	// ── Buy-in chip amounts ───────────────────────────────────────────────────
 
 	const buyInAmounts = $derived([
-		{ label: '0.5×', kr: buyIn * 0.5 },
-		{ label: '1×',   kr: buyIn },
-		{ label: '1.5×', kr: buyIn * 1.5 },
-		{ label: '2×',   kr: buyIn * 2 },
+		{ label: "0.5×", kr: buyIn * 0.5 },
+		{ label: "1×", kr: buyIn },
+		{ label: "1.5×", kr: buyIn * 1.5 },
+		{ label: "2×", kr: buyIn * 2 },
 	]);
 
 	const buyInAmountsExtra = $derived([
-		{ label: '0.25×', kr: buyIn * 0.25 },
-		{ label: '2.5×',  kr: buyIn * 2.5 },
-		{ label: '3×',    kr: buyIn * 3 },
+		{ label: "0.25×", kr: buyIn * 0.25 },
+		{ label: "2.5×", kr: buyIn * 2.5 },
+		{ label: "3×", kr: buyIn * 3 },
 	]);
 
 	// ── Stack delta chip amounts ──────────────────────────────────────────────
 
 	const stackDeltasPos = $derived([
-		{ delta: bbSize * 1  },
-		{ delta: bbSize * 5  },
+		{ delta: bbSize * 1 },
+		{ delta: bbSize * 5 },
 		{ delta: bbSize * 10 },
 	]);
 
 	const stackDeltasNeg = $derived([
-		{ delta: -bbSize * 1  },
-		{ delta: -bbSize * 5  },
+		{ delta: -bbSize * 1 },
+		{ delta: -bbSize * 5 },
 		{ delta: -bbSize * 10 },
 	]);
 
@@ -58,7 +70,9 @@
 	const previewStack = $derived((seat.stack ?? 0) + pendingDelta);
 	const hasPending = $derived(pendingDelta !== 0);
 
-	const net = $derived(calculateNet({ totalBuyIns, finalStack: previewStack }));
+	const net = $derived(
+		calculateNet({ totalBuyIns, finalStack: previewStack }),
+	);
 	const netCls = $derived(getNetClass(net));
 	const netPfx = $derived(getNetSign(net));
 
@@ -148,9 +162,13 @@
 		}
 	}
 
-	function handleReset() { pendingDelta = 0; }
+	function handleReset() {
+		pendingDelta = 0;
+	}
 
-	function handleBust() { pendingDelta = -(seat.stack ?? 0); }
+	function handleBust() {
+		pendingDelta = -(seat.stack ?? 0);
+	}
 
 	async function handleStackExact() {
 		if (stackAmount === null || busy) return;
@@ -187,15 +205,18 @@
 </script>
 
 <div class="flex flex-col gap-6 p-5 pb-24">
-
 	<!-- ── Stats bar ─────────────────────────────────────────────────────── -->
 	<section class="bg-surface rounded-card p-4 flex flex-col gap-3">
 		<div class="flex items-baseline justify-between gap-3">
 			<span class="text-text-muted text-sm">Stack</span>
 			<div class="flex flex-col items-end gap-0.5">
 				{#key previewStack}
-					<span class={['tabular text-3xl font-semibold stack-value',
-						hasPending ? 'text-yellow-300' : 'text-text']}>
+					<span
+						class={[
+							"tabular text-3xl font-semibold stack-value",
+							hasPending ? "text-yellow-300" : "text-text",
+						]}
+					>
 						{fmt(previewStack)}
 					</span>
 				{/key}
@@ -210,9 +231,11 @@
 			<span class="text-text-muted">Bought in</span>
 			<span class="tabular text-text">{fmt(totalBuyIns)}</span>
 		</div>
-		<div class="flex items-center justify-between gap-3 text-sm border-t border-border pt-3">
+		<div
+			class="flex items-center justify-between gap-3 text-sm border-t border-border pt-3"
+		>
 			<span class="text-text-muted">Net</span>
-			<span class={['tabular font-semibold', netCls]}>
+			<span class={["tabular font-semibold", netCls]}>
 				{netPfx}{fmt(net)}
 			</span>
 		</div>
@@ -220,7 +243,9 @@
 
 	<!-- ── Stack section ─────────────────────────────────────────────────── -->
 	<section class="flex flex-col gap-3">
-		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
+		<h2
+			class="text-text-muted text-xs font-semibold uppercase tracking-widest"
+		>
 			Adjust Stack
 		</h2>
 
@@ -235,9 +260,11 @@
 				/>
 			{/each}
 			<ChipButton
-				label="Set exact"
+				label="Set"
 				tone="muted"
-				onclick={() => { stackSheetOpen = true; }}
+				onclick={() => {
+					stackSheetOpen = true;
+				}}
 			/>
 		</div>
 
@@ -252,7 +279,7 @@
 				/>
 			{/each}
 			<ChipButton
-				label="Bust 💀"
+				label="Bust"
 				tone="red"
 				disabled={busy || !seat.stack}
 				onclick={handleBust}
@@ -266,15 +293,15 @@
 					class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium
 						hover:text-text transition-colors disabled:opacity-40 disabled:pointer-events-none"
 					onclick={handleReset}
-					disabled={busy}
-				>Reset</button>
+					disabled={busy}>Reset</button
+				>
 				<button
 					class="flex-1 h-tap rounded-sm bg-green text-text text-sm font-semibold
 						disabled:opacity-40 disabled:pointer-events-none"
 					onclick={handleConfirm}
 					disabled={busy}
 				>
-					{busy ? 'Saving…' : 'Confirm'}
+					{busy ? "Saving…" : "Confirm"}
 				</button>
 			</div>
 		{/if}
@@ -282,7 +309,9 @@
 
 	<!-- ── Buy-in section ────────────────────────────────────────────────── -->
 	<section class="flex flex-col gap-3">
-		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
+		<h2
+			class="text-text-muted text-xs font-semibold uppercase tracking-widest"
+		>
 			Buy In / Top Up
 		</h2>
 		<div class="flex gap-3 flex-wrap">
@@ -296,7 +325,9 @@
 			<ChipButton
 				label="…"
 				tone="muted"
-				onclick={() => { showExtraBuyIn = !showExtraBuyIn; }}
+				onclick={() => {
+					showExtraBuyIn = !showExtraBuyIn;
+				}}
 			/>
 		</div>
 
@@ -313,7 +344,9 @@
 				<ChipButton
 					label="Other"
 					tone="muted"
-					onclick={() => { buyInSheetOpen = true; }}
+					onclick={() => {
+						buyInSheetOpen = true;
+					}}
 				/>
 			</div>
 		{/if}
@@ -321,11 +354,16 @@
 
 	<!-- ── Cash Out section ──────────────────────────────────────────────── -->
 	<section class="flex flex-col gap-3 border-t border-border pt-4">
-		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
+		<h2
+			class="text-text-muted text-xs font-semibold uppercase tracking-widest"
+		>
 			Cash Out
 		</h2>
 		<button
-			onclick={() => { cashOutAmount = stack ?? null; cashOutSheetOpen = true; }}
+			onclick={() => {
+				cashOutAmount = stack ?? null;
+				cashOutSheetOpen = true;
+			}}
 			disabled={busy}
 			class="w-full h-tap rounded-sm bg-surface border border-red text-red-light text-sm font-semibold
 				hover:bg-red-dim transition-colors disabled:opacity-40 disabled:pointer-events-none"
@@ -339,22 +377,22 @@
 <Sheet bind:open={buyInSheetOpen} title="Custom Buy In">
 	<div class="flex flex-col gap-3">
 		<p class="text-text-muted text-sm">Enter the buy-in amount in kr.</p>
-		<NumberInput
-			bind:value={buyInAmount}
-			placeholder="e.g. 250"
-		/>
+		<NumberInput bind:value={buyInAmount} placeholder="e.g. 250" />
 	</div>
 	{#snippet footer()}
 		<div class="flex gap-3">
 			<button
 				class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium"
-				onclick={() => { buyInSheetOpen = false; buyInAmount = null; }}
-			>Cancel</button>
+				onclick={() => {
+					buyInSheetOpen = false;
+					buyInAmount = null;
+				}}>Cancel</button
+			>
 			<button
 				class="flex-1 h-tap rounded-sm bg-green text-text text-sm font-semibold disabled:opacity-40"
 				disabled={!buyInAmount || busy}
-				onclick={handleBuyInCustom}
-			>Add Buy In</button>
+				onclick={handleBuyInCustom}>Add Buy In</button
+			>
 		</div>
 	{/snippet}
 </Sheet>
@@ -362,23 +400,25 @@
 <!-- ── Set exact stack sheet ─────────────────────────────────────────────── -->
 <Sheet bind:open={stackSheetOpen} title="Set Exact Stack">
 	<div class="flex flex-col gap-3">
-		<p class="text-text-muted text-sm">Enter your current chip count in kr.</p>
-		<NumberInput
-			bind:value={stackAmount}
-			placeholder="e.g. 480"
-		/>
+		<p class="text-text-muted text-sm">
+			Enter your current chip count in kr.
+		</p>
+		<NumberInput bind:value={stackAmount} placeholder="e.g. 480" />
 	</div>
 	{#snippet footer()}
 		<div class="flex gap-3">
 			<button
 				class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium"
-				onclick={() => { stackSheetOpen = false; stackAmount = null; }}
-			>Cancel</button>
+				onclick={() => {
+					stackSheetOpen = false;
+					stackAmount = null;
+				}}>Cancel</button
+			>
 			<button
 				class="flex-1 h-tap rounded-sm bg-green text-text text-sm font-semibold disabled:opacity-40"
 				disabled={!stackAmount || busy}
-				onclick={handleStackExact}
-			>Set Stack</button>
+				onclick={handleStackExact}>Set Stack</button
+			>
 		</div>
 	{/snippet}
 </Sheet>
@@ -386,7 +426,9 @@
 <!-- ── Cash Out sheet ────────────────────────────────────────────────────── -->
 <Sheet bind:open={cashOutSheetOpen} title="Cash out {seat.players.name}?">
 	<div class="flex flex-col gap-3">
-		<p class="text-text-muted text-sm">Enter your final stack to lock in your result and leave.</p>
+		<p class="text-text-muted text-sm">
+			Enter your final stack to lock in your result and leave.
+		</p>
 		<NumberInput
 			bind:value={cashOutAmount}
 			placeholder="Final stack (kr)"
@@ -396,14 +438,17 @@
 		<div class="flex gap-3">
 			<button
 				class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium"
-				onclick={() => { cashOutSheetOpen = false; cashOutAmount = null; }}
-			>Cancel</button>
+				onclick={() => {
+					cashOutSheetOpen = false;
+					cashOutAmount = null;
+				}}>Cancel</button
+			>
 			<button
 				class="flex-1 h-tap rounded-sm bg-red text-text text-sm font-semibold disabled:opacity-40"
 				disabled={cashOutAmount === null || busy}
 				onclick={handleCashOut}
 			>
-				{busy ? 'Locking…' : 'Confirm Cash Out'}
+				{busy ? "Locking…" : "Confirm Cash Out"}
 			</button>
 		</div>
 	{/snippet}
@@ -412,8 +457,14 @@
 <style>
 	/* 200ms count-roll animation on stack value change */
 	@keyframes stack-roll {
-		0%   { opacity: 0.3; transform: translateY(-6px); }
-		100% { opacity: 1;   transform: translateY(0); }
+		0% {
+			opacity: 0.3;
+			transform: translateY(-6px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.stack-value {
