@@ -108,12 +108,7 @@
 				sessionId: session.id,
 				playerId: seat.player_id,
 				amount: kr,
-			});
-			await updateStack({
-				seatId: seat.id,
-				sessionId: session.id,
-				playerId: seat.player_id,
-				stack: newStack,
+				newStack,
 			});
 			pendingDelta = 0;
 			onStackChange?.();
