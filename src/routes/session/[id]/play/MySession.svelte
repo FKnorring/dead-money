@@ -36,29 +36,45 @@
 
 	// ── Stack delta chip amounts ──────────────────────────────────────────────
 
-	const stackDeltas = $derived([
-		{ label: `–2BB`, delta: -bbSize * 2 },
-		{ label: `–1BB`, delta: -bbSize },
-		{ label: `+1BB`, delta: bbSize },
-		{ label: `+2BB`, delta: bbSize * 2 },
+	const stackDeltasPos = $derived([
+		{ delta: bbSize * 1  },
+		{ delta: bbSize * 5  },
+		{ delta: bbSize * 10 },
 	]);
 
-	const stackDeltasExtra = $derived([
-		{ label: `+0.5BB`, delta: bbSize * 0.5 },
-		{ label: `+3BB`,   delta: bbSize * 3 },
-		{ label: `+4BB`,   delta: bbSize * 4 },
+	const stackDeltasNeg = $derived([
+		{ delta: -bbSize * 1  },
+		{ delta: -bbSize * 5  },
+		{ delta: -bbSize * 10 },
 	]);
 
 	// ── Derived stats ─────────────────────────────────────────────────────────
 
 	const stack = $derived(seat.stack);
-	const net = $derived(calculateNet({ totalBuyIns, finalStack: stack }));
+
+	let pendingDelta = $state(0);
+	const previewStack = $derived((seat.stack ?? 0) + pendingDelta);
+	const hasPending = $derived(pendingDelta !== 0);
+
+	const net = $derived(calculateNet({ totalBuyIns, finalStack: previewStack }));
 	const netCls = $derived(getNetClass(net));
 	const netPfx = $derived(getNetSign(net));
 
 	function fmt(kr: number): string {
 		return formatAmount(kr, displayUnit, session);
 	}
+
+	function fmtDelta(delta: number): string {
+		if (delta >= 0) return `+${fmt(delta)}`;
+		return `–${fmt(-delta)}`;
+	}
+
+	// ── Reset pending delta when seat.stack changes externally (Realtime) ─────
+
+	$effect(() => {
+		seat.stack; // track
+		pendingDelta = 0;
+	});
 
 	// ── Expanded rows ─────────────────────────────────────────────────────────
 
@@ -84,12 +100,20 @@
 		if (busy) return;
 		busy = true;
 		try {
+			const newStack = (seat.stack ?? 0) + pendingDelta + kr;
 			await recordBuyIn({
 				seatId: seat.id,
 				sessionId: session.id,
 				playerId: seat.player_id,
 				amount: kr,
 			});
+			await updateStack({
+				seatId: seat.id,
+				sessionId: session.id,
+				playerId: seat.player_id,
+				stack: newStack,
+			});
+			pendingDelta = 0;
 			onStackChange?.();
 		} finally {
 			busy = false;
@@ -103,33 +127,48 @@
 		buyInAmount = null;
 	}
 
-	async function handleDelta(delta: number) {
-		if (busy) return;
-		const current = stack ?? 0;
-		await handleSetStack(current + delta);
+	function applyDelta(delta: number) {
+		pendingDelta += delta;
 	}
 
-	async function handleSetStack(newStack: number) {
-		if (busy) return;
+	async function handleConfirm() {
+		if (!hasPending || busy) return;
 		busy = true;
 		try {
 			await updateStack({
 				seatId: seat.id,
 				sessionId: session.id,
 				playerId: seat.player_id,
-				stack: newStack,
+				stack: previewStack,
 			});
+			pendingDelta = 0;
 			onStackChange?.();
 		} finally {
 			busy = false;
 		}
 	}
 
+	function handleReset() { pendingDelta = 0; }
+
+	function handleBust() { pendingDelta = -(seat.stack ?? 0); }
+
 	async function handleStackExact() {
-		if (!stackAmount || busy) return;
-		await handleSetStack(stackAmount);
-		stackSheetOpen = false;
-		stackAmount = null;
+		if (stackAmount === null || busy) return;
+		busy = true;
+		try {
+			await updateStack({
+				seatId: seat.id,
+				sessionId: session.id,
+				playerId: seat.player_id,
+				stack: stackAmount,
+			});
+			pendingDelta = 0;
+			stackSheetOpen = false;
+			stackAmount = null;
+			onStackChange?.();
+		} finally {
+			busy = false;
+		}
 	}
 
 	async function handleCashOut() {
@@ -152,11 +191,19 @@
 	<section class="bg-surface rounded-card p-4 flex flex-col gap-3">
 		<div class="flex items-baseline justify-between gap-3">
 			<span class="text-text-muted text-sm">Stack</span>
-			{#key stack}
-			<span class="tabular text-3xl font-semibold text-text stack-value">
-				{stack !== null ? fmt(stack) : '—'}
-			</span>
-		{/key}
+			<div class="flex flex-col items-end gap-0.5">
+				{#key previewStack}
+					<span class={['tabular text-3xl font-semibold stack-value',
+						hasPending ? 'text-yellow-300' : 'text-text']}>
+						{fmt(previewStack)}
+					</span>
+				{/key}
+				{#if hasPending}
+					<span class="tabular text-xs text-yellow-300">
+						{fmtDelta(pendingDelta)} pending
+					</span>
+				{/if}
+			</div>
 		</div>
 		<div class="flex items-center justify-between gap-3 text-sm">
 			<span class="text-text-muted">Bought in</span>
@@ -214,13 +261,15 @@
 		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
 			Adjust Stack
 		</h2>
+
+		<!-- Positive row -->
 		<div class="flex gap-3 flex-wrap">
-			{#each stackDeltas as { label, delta } (label)}
+			{#each stackDeltasPos as { delta } (delta)}
 				<ChipButton
-					{label}
-					tone={delta < 0 ? 'red' : 'green'}
+					label={fmtDelta(delta)}
+					tone="green"
 					disabled={busy}
-					onclick={() => handleDelta(delta)}
+					onclick={() => applyDelta(delta)}
 				/>
 			{/each}
 			<ChipButton
@@ -230,21 +279,52 @@
 			/>
 		</div>
 
+		<!-- Negative row -->
+		<div class="flex gap-3 flex-wrap">
+			{#each stackDeltasNeg as { delta } (delta)}
+				<ChipButton
+					label={fmtDelta(delta)}
+					tone="red"
+					disabled={busy}
+					onclick={() => applyDelta(delta)}
+				/>
+			{/each}
+			<ChipButton
+				label="Bust 💀"
+				tone="red"
+				disabled={busy || !seat.stack}
+				onclick={handleBust}
+			/>
+		</div>
+
+		<!-- Expanded: set exact -->
 		{#if showExtraStack}
 			<div class="flex gap-3 flex-wrap">
-				{#each stackDeltasExtra as { label, delta } (label)}
-					<ChipButton
-						{label}
-						tone="muted"
-						disabled={busy}
-						onclick={() => handleDelta(delta)}
-					/>
-				{/each}
 				<ChipButton
 					label="Set exact"
 					tone="muted"
 					onclick={() => { stackSheetOpen = true; }}
 				/>
+			</div>
+		{/if}
+
+		<!-- Confirm / Reset — only when there's a pending delta -->
+		{#if hasPending}
+			<div class="flex gap-3 mt-1">
+				<button
+					class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium
+						hover:text-text transition-colors disabled:opacity-40 disabled:pointer-events-none"
+					onclick={handleReset}
+					disabled={busy}
+				>Reset</button>
+				<button
+					class="flex-1 h-tap rounded-sm bg-green text-text text-sm font-semibold
+						disabled:opacity-40 disabled:pointer-events-none"
+					onclick={handleConfirm}
+					disabled={busy}
+				>
+					{busy ? 'Saving…' : 'Confirm'}
+				</button>
 			</div>
 		{/if}
 	</section>
