@@ -71,17 +71,20 @@
 		return `–${fmt(-delta)}`;
 	}
 
-	// ── Reset pending delta when seat.stack changes externally (Realtime) ─────
+	// ── Reset pending delta only when seat.stack VALUE changes (not just prop ref) ──
 
+	let _prevStack = $state(seat.stack);
 	$effect(() => {
-		seat.stack; // track
-		pendingDelta = 0;
+		const current = seat.stack;
+		if (current !== _prevStack) {
+			_prevStack = current;
+			pendingDelta = 0;
+		}
 	});
 
 	// ── Expanded rows ─────────────────────────────────────────────────────────
 
 	let showExtraBuyIn = $state(false);
-	let showExtraStack = $state(false);
 
 	// ── Sheets ────────────────────────────────────────────────────────────────
 
@@ -215,6 +218,68 @@
 		</div>
 	</section>
 
+	<!-- ── Stack section ─────────────────────────────────────────────────── -->
+	<section class="flex flex-col gap-3">
+		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
+			Adjust Stack
+		</h2>
+
+		<!-- Positive row -->
+		<div class="flex gap-3 flex-wrap">
+			{#each stackDeltasPos as { delta } (delta)}
+				<ChipButton
+					label={fmtDelta(delta)}
+					tone="green"
+					disabled={busy}
+					onclick={() => applyDelta(delta)}
+				/>
+			{/each}
+			<ChipButton
+				label="Set exact"
+				tone="muted"
+				onclick={() => { stackSheetOpen = true; }}
+			/>
+		</div>
+
+		<!-- Negative row -->
+		<div class="flex gap-3 flex-wrap">
+			{#each stackDeltasNeg as { delta } (delta)}
+				<ChipButton
+					label={fmtDelta(delta)}
+					tone="red"
+					disabled={busy}
+					onclick={() => applyDelta(delta)}
+				/>
+			{/each}
+			<ChipButton
+				label="Bust 💀"
+				tone="red"
+				disabled={busy || !seat.stack}
+				onclick={handleBust}
+			/>
+		</div>
+
+		<!-- Confirm / Reset — only when there's a pending delta -->
+		{#if hasPending}
+			<div class="flex gap-3 mt-1">
+				<button
+					class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium
+						hover:text-text transition-colors disabled:opacity-40 disabled:pointer-events-none"
+					onclick={handleReset}
+					disabled={busy}
+				>Reset</button>
+				<button
+					class="flex-1 h-tap rounded-sm bg-green text-text text-sm font-semibold
+						disabled:opacity-40 disabled:pointer-events-none"
+					onclick={handleConfirm}
+					disabled={busy}
+				>
+					{busy ? 'Saving…' : 'Confirm'}
+				</button>
+			</div>
+		{/if}
+	</section>
+
 	<!-- ── Buy-in section ────────────────────────────────────────────────── -->
 	<section class="flex flex-col gap-3">
 		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
@@ -250,79 +315,6 @@
 					tone="muted"
 					onclick={() => { buyInSheetOpen = true; }}
 				/>
-			</div>
-		{/if}
-	</section>
-
-	<!-- ── Stack section ─────────────────────────────────────────────────── -->
-	<section class="flex flex-col gap-3">
-		<h2 class="text-text-muted text-xs font-semibold uppercase tracking-widest">
-			Adjust Stack
-		</h2>
-
-		<!-- Positive row -->
-		<div class="flex gap-3 flex-wrap">
-			{#each stackDeltasPos as { delta } (delta)}
-				<ChipButton
-					label={fmtDelta(delta)}
-					tone="green"
-					disabled={busy}
-					onclick={() => applyDelta(delta)}
-				/>
-			{/each}
-			<ChipButton
-				label="…"
-				tone="muted"
-				onclick={() => { showExtraStack = !showExtraStack; }}
-			/>
-		</div>
-
-		<!-- Negative row -->
-		<div class="flex gap-3 flex-wrap">
-			{#each stackDeltasNeg as { delta } (delta)}
-				<ChipButton
-					label={fmtDelta(delta)}
-					tone="red"
-					disabled={busy}
-					onclick={() => applyDelta(delta)}
-				/>
-			{/each}
-			<ChipButton
-				label="Bust 💀"
-				tone="red"
-				disabled={busy || !seat.stack}
-				onclick={handleBust}
-			/>
-		</div>
-
-		<!-- Expanded: set exact -->
-		{#if showExtraStack}
-			<div class="flex gap-3 flex-wrap">
-				<ChipButton
-					label="Set exact"
-					tone="muted"
-					onclick={() => { stackSheetOpen = true; }}
-				/>
-			</div>
-		{/if}
-
-		<!-- Confirm / Reset — only when there's a pending delta -->
-		{#if hasPending}
-			<div class="flex gap-3 mt-1">
-				<button
-					class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium
-						hover:text-text transition-colors disabled:opacity-40 disabled:pointer-events-none"
-					onclick={handleReset}
-					disabled={busy}
-				>Reset</button>
-				<button
-					class="flex-1 h-tap rounded-sm bg-green text-text text-sm font-semibold
-						disabled:opacity-40 disabled:pointer-events-none"
-					onclick={handleConfirm}
-					disabled={busy}
-				>
-					{busy ? 'Saving…' : 'Confirm'}
-				</button>
 			</div>
 		{/if}
 	</section>
