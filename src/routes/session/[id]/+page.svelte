@@ -55,7 +55,7 @@
 	// ── Realtime seats subscription ──────────────────────────────────────────────
 
 	$effect(() => {
-		const sync = useSessionSync(session.id, seats, (fresh) => { seats = fresh; });
+		const sync = useSessionSync(session.id, (fresh) => { seats = fresh; });
 
 		// Subscribe to session state changes (e.g. host starts or closes game)
 		const sessionChannel = supabase
