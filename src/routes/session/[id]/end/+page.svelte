@@ -167,7 +167,14 @@
 				</h1>
 				<p class="text-text-muted text-sm">{formatDate(session.closed_at ?? session.created_at)}</p>
 			</div>
-			<span class="text-3xl leading-none shrink-0 mt-1" aria-hidden="true">♠</span>
+			<div class="flex flex-col items-end gap-2 shrink-0 mt-1">
+				<span class="text-3xl leading-none" aria-hidden="true">♠</span>
+				<a
+					href="/"
+					class="flex items-center gap-1.5 bg-surface/40 hover:bg-surface/70 transition-colors
+						text-text-muted hover:text-text text-sm font-medium rounded-chip px-3 py-1.5"
+				>← Home</a>
+			</div>
 		</div>
 
 		{#if biggestWinner}

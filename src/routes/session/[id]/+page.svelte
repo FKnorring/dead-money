@@ -46,6 +46,10 @@
 	$effect(() => {
 		isHost = getIsHost(session.id);
 		myPlayerId = getMyPlayerId(session.id);
+		// If already joined and game is active, go straight to play
+		if (myPlayerId && session.state === 'active') {
+			goto(`/session/${session.id}/play`);
+		}
 	});
 
 	// ── Realtime seats subscription ──────────────────────────────────────────────
@@ -99,6 +103,7 @@
 			await claimSeat(seat.id);
 			setMyPlayerId(session.id, seat.player_id);
 			myPlayerId = seat.player_id;
+			if (session.state === 'active') goto(`/session/${session.id}/play`);
 		} catch (e) {
 			joinError = e instanceof Error ? e.message : 'Failed to claim seat';
 		} finally {
@@ -115,6 +120,7 @@
 			await upsertSeat({ sessionId: session.id, playerId: player.id, claimed: true });
 			setMyPlayerId(session.id, player.id);
 			myPlayerId = player.id;
+			if (session.state === 'active') goto(`/session/${session.id}/play`);
 		} catch (e) {
 			joinError = e instanceof Error ? e.message : 'Failed to join';
 		} finally {

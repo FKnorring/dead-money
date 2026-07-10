@@ -1,6 +1,6 @@
 # 02 — Session lib helpers for active tracking
 
-Status: ready-for-agent
+Status: completed
 
 Add to `src/lib/session.ts`:
 

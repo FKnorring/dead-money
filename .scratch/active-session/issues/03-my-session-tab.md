@@ -1,6 +1,6 @@
 # 03 — My Session tab
 
-Status: ready-for-agent
+Status: completed
 
 Build the "My Session" tab content in the play screen. This is the personal live-tracking view — the screen each player stares at during a hand.
 

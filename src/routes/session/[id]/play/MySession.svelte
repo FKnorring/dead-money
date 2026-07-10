@@ -12,9 +12,11 @@
 		displayUnit: 'kr' | 'bb';
 		/** Called when the seat's stack changes so the parent can update its state */
 		onStackChange?: () => void;
+		/** Called specifically after a successful cash-out */
+		onCashOut?: () => void;
 	}
 
-	let { session, seat, totalBuyIns, displayUnit, onStackChange }: Props = $props();
+	let { session, seat, totalBuyIns, displayUnit, onStackChange, onCashOut }: Props = $props();
 
 	const buyIn = $derived(session.buy_in_amount);
 	const bbSize = $derived(session.bb_size);
@@ -179,6 +181,7 @@
 			cashOutSheetOpen = false;
 			cashOutAmount = null;
 			onStackChange?.();
+			onCashOut?.();
 		} finally {
 			busy = false;
 		}

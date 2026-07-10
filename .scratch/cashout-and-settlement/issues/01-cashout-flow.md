@@ -1,6 +1,6 @@
 # 01 — CashOut flow
 
-Status: ready-for-agent
+Status: completed
 
 ## Prerequisites already in place
 

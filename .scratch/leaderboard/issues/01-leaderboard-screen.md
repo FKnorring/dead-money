@@ -1,6 +1,6 @@
 # 01 — Leaderboard screen
 
-Status: ready-for-agent
+Status: completed
 
 Build `/leaderboard` — a public ceremonial screen showing cross-session player rankings.
 

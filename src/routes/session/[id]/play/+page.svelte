@@ -106,6 +106,12 @@
 		seats = freshSeats;
 		buyInTotals = freshTotals;
 	}
+
+	/** After a cash-out: re-fetch then switch to The Table */
+	async function handleCashOut() {
+		await handleChange();
+		activeTab = 'the-table';
+	}
 </script>
 
 <div class="min-h-dvh bg-bg text-text flex flex-col max-w-md mx-auto">
@@ -158,13 +164,24 @@
 	<!-- ── Tab content ────────────────────────────────────────────────────── -->
 	<div class="flex-1 overflow-y-auto">
 		{#if activeTab === 'my-session'}
-			{#if managedSeat}
+			{#if managedSeat && managedSeat.cashed_out}
+				<div class="p-5 text-text-muted text-sm text-center py-12">
+					<p class="text-2xl mb-3">🏁</p>
+					<p class="font-medium text-text">{managedSeat.players.name} has cashed out.</p>
+					<p class="mt-1">Final stack: <span class="tabular text-text">{managedSeat.final_stack ?? 0} kr</span></p>
+					<button
+						onclick={() => { activeTab = 'the-table'; }}
+						class="mt-4 text-green-light text-sm font-medium underline underline-offset-2"
+					>View the table →</button>
+				</div>
+			{:else if managedSeat}
 				<MySession
 					{session}
 					seat={managedSeat}
 					totalBuyIns={buyInTotals[managedSeat.player_id] ?? 0}
 					{displayUnit}
 					onStackChange={handleChange}
+					onCashOut={handleCashOut}
 				/>
 			{:else}
 				<div class="p-5 text-text-muted text-sm text-center py-12">

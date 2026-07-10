@@ -12,8 +12,9 @@ export const load: PageLoad = async ({ params }) => {
 
 	if (!session) error(404, 'Session not found');
 
-	if (session.state === 'active') redirect(302, `/session/${params.id}/play`);
 	if (session.state === 'closed') redirect(302, `/session/${params.id}/end`);
+	// Active sessions: do NOT redirect here — identity lives in localStorage (client-only).
+	// The lobby component redirects to /play once it knows the player has joined.
 
 	const seats = await loadSeats(params.id);
 

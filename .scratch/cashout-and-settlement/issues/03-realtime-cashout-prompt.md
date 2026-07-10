@@ -1,6 +1,6 @@
 # 03 — Realtime cash-out prompt on session end
 
-Status: needs-triage
+Status: ready-for-agent
 
 ## Source
 

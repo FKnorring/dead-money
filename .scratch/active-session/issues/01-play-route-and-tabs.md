@@ -1,6 +1,6 @@
 # 01 — Play route scaffold + tab layout
 
-Status: ready-for-agent
+Status: completed
 
 Replace the stub at `/session/[id]/play` with a real page that:
 

@@ -1,6 +1,6 @@
 # 04 — Finalize missing stacks before settlement
 
-Status: needs-triage
+Status: ready-for-agent
 
 ## Source
 

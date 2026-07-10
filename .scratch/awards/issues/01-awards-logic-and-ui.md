@@ -1,6 +1,6 @@
 # 01 — Awards logic + settlement screen integration
 
-Status: ready-for-agent
+Status: completed
 
 Build `src/lib/awards.ts` with `calculateAwards(seats: AwardInput[]): Award[]` and integrate it into the settlement screen.
 

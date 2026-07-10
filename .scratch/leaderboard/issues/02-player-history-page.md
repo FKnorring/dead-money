@@ -1,6 +1,6 @@
 # 02 — Player history page
 
-Status: ready-for-agent
+Status: completed
 
 Build `/player/[id]` — all sessions for a single player.
 

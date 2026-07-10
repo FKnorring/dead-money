@@ -1,6 +1,6 @@
 # 04 — The Table tab
 
-Status: ready-for-agent
+Status: completed
 
 Build the "The Table" tab content in the play screen. This is the live scoreboard — all players can see everyone's position.
 

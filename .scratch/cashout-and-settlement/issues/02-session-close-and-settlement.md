@@ -1,6 +1,6 @@
 # 02 — Session close + settlement screen
 
-Status: ready-for-agent
+Status: completed
 
 ## Prerequisites already in place
 
