@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { netClass as getNetClass, formatNet, formatPercent } from '$lib';
-	import type { PlayerSessionRow } from '$lib';
+	import { netClass as getNetClass, formatNet, formatPercent, buildChart, nearestPoint } from '$lib';
+	import type { PlayerSessionRow, ChartPoint } from '$lib';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -28,54 +28,13 @@
 
 	// ── Stack timeline chart ──────────────────────────────────────────────────
 
-	// Chart dimensions (viewBox)
+	// Chart dimensions (viewBox) — must match stackChart.ts defaults
 	const CHART_W = 320;
 	const CHART_H = 120;
 	const PAD_L = 40;  // space for y-axis labels
 	const PAD_R = 12;
 	const PAD_T = 12;
 	const PAD_B = 28;  // space for x-axis labels
-
-	interface ChartPoint { x: number; y: number; amount: number; label: string }
-
-	function buildChart(timeline: { amount: number; createdAt: string }[]): {
-		points: ChartPoint[];
-		pathD: string;
-		areaD: string;
-		yMin: number;
-		yMax: number;
-	} | null {
-		if (timeline.length < 2) return null;
-
-		const amounts = timeline.map(t => t.amount);
-		const raw_min = Math.min(...amounts);
-		const raw_max = Math.max(...amounts);
-		// Give some padding above/below so the line doesn't clip to edges
-		const padding = Math.max((raw_max - raw_min) * 0.15, 20);
-		const yMin = Math.max(0, raw_min - padding);
-		const yMax = raw_max + padding;
-		const yRange = yMax - yMin || 1;
-
-		const plotW = CHART_W - PAD_L - PAD_R;
-		const plotH = CHART_H - PAD_T - PAD_B;
-
-		const points: ChartPoint[] = timeline.map((t, i) => {
-			const nx = i / (timeline.length - 1);
-			const ny = 1 - (t.amount - yMin) / yRange;
-			return {
-				x: PAD_L + nx * plotW,
-				y: PAD_T + ny * plotH,
-				amount: t.amount,
-				label: new Date(t.createdAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }),
-			};
-		});
-
-		const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
-		const baseY = (PAD_T + plotH).toFixed(1);
-		const areaD = `${pathD} L ${points.at(-1)!.x.toFixed(1)} ${baseY} L ${PAD_L} ${baseY} Z`;
-
-		return { points, pathD, areaD, yMin, yMax };
-	}
 
 	// Tooltip state per session (keyed by sessionId)
 	let activePoint = $state<{ sessionId: string; point: ChartPoint } | null>(null);
@@ -84,14 +43,7 @@
 		const svg = (e.currentTarget as SVGSVGElement);
 		const rect = svg.getBoundingClientRect();
 		const svgX = (e.clientX - rect.left) * (CHART_W / rect.width);
-		// Find nearest point by x
-		let closest = points[0];
-		let closestDist = Infinity;
-		for (const pt of points) {
-			const d = Math.abs(pt.x - svgX);
-			if (d < closestDist) { closestDist = d; closest = pt; }
-		}
-		activePoint = { sessionId, point: closest };
+		activePoint = { sessionId, point: nearestPoint(svgX, points) };
 	}
 
 	function clearTooltip() { activePoint = null; }
