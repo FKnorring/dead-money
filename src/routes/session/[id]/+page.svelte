@@ -6,6 +6,9 @@
 	import type { Seat, Player } from '$lib';
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import QRCode from 'qrcode';
+	import { onMount } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -167,6 +170,24 @@
 	function formatDate(iso: string) {
 		return new Date(iso).toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' });
 	}
+
+	// ── QR code ──────────────────────────────────────────────────────────────────
+
+	let joinUrl = $derived(`${$page.url.origin}/session/${session.id}`);
+	let qrSvg = $state('');
+	let copied = $state(false);
+
+	$effect(() => {
+		const url = joinUrl;
+		QRCode.toString(url, { type: 'svg', margin: 1, width: 256, color: { dark: '#f0f0e8', light: '#111a13' } })
+			.then(svg => { qrSvg = svg; });
+	});
+
+	async function handleCopyLink() {
+		await navigator.clipboard.writeText(joinUrl);
+		copied = true;
+		setTimeout(() => { copied = false; }, 2000);
+	}
 </script>
 
 <div class="min-h-dvh bg-bg text-text flex flex-col max-w-md mx-auto">
@@ -237,6 +258,28 @@
 		<!-- ── Host controls ────────────────────────────────────────────────────── -->
 		{#if isHost && session.state === 'lobby'}
 			<section class="flex flex-col gap-3">
+
+				<!-- QR invite card -->
+				<Card class="flex flex-col items-center gap-3 py-5">
+					<p class="text-text-muted text-xs font-semibold uppercase tracking-widest">Scan to join</p>
+					{#if qrSvg}
+						<div class="rounded-lg overflow-hidden w-56 h-56 shrink-0">
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							{@html qrSvg}
+						</div>
+					{:else}
+						<div class="w-56 h-56 bg-surface-high rounded-lg animate-pulse"></div>
+					{/if}
+					<button
+						onclick={handleCopyLink}
+						class="flex items-center gap-1.5 text-text-muted text-xs hover:text-text transition-colors group"
+						title="Copy link"
+					>
+						<span class="font-mono truncate max-w-[200px]">{joinUrl}</span>
+						<span class="shrink-0">{copied ? '✓' : '⎘'}</span>
+					</button>
+				</Card>
+
 				<Button variant="secondary" onclick={() => { addPlayerOpen = true; addQuery = ''; addSelected = null; addError = ''; }}>
 					+ Add Player
 				</Button>
