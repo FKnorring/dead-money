@@ -302,5 +302,5 @@ export function buildSwishLink({
 	date: string;
 }): string {
 	const msg = encodeURIComponent(`Poker ${date}`);
-	return `https://app.swish.nu/1/p/sw/?sw=${swishNumber}&amt=${amount}&cur=SEK&msg=${msg}&edit=amt%2Cmsg&src=qr`;
+	return `https://app.swish.nu/1/p/sw/?sw=${swishNumber}&amt=${amount}&cur=SEK&edit=amt&src=qr`;
 }
