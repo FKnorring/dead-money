@@ -232,7 +232,10 @@
 						<label for="final-stack-{seat.id}" class="text-sm text-text font-medium">{seat.players.name}</label>
 						<NumberInput
 							id="final-stack-{seat.id}"
-							bind:value={finalStackInputs[seat.id]}
+							bind:value={
+								() => finalStackInputs[seat.id] ?? null,
+								(v) => { finalStackInputs[seat.id] = v; }
+							}
 							placeholder="Final stack (kr)"
 						/>
 					</div>
