@@ -77,13 +77,29 @@
 
 	let endSessionSheetOpen = $state(false);
 	let closingSession = $state(false);
+	let finalStackInputs = $state<Record<string, number | null>>({});
 
 	const uncashedOutSeats = $derived(seats.filter(s => !s.cashed_out));
+
+	function openEndSessionSheet() {
+		const inputs: Record<string, number | null> = {};
+		for (const s of seats.filter(seat => !seat.cashed_out)) {
+			inputs[s.id] = s.stack ?? null;
+		}
+		finalStackInputs = inputs;
+		endSessionSheetOpen = true;
+	}
 
 	async function handleEndSession() {
 		if (closingSession) return;
 		closingSession = true;
 		try {
+			// Finalize any uncashed seats that have a stack value entered
+			const cashOutPromises = seats
+				.filter(s => !s.cashed_out)
+				.filter(s => finalStackInputs[s.id] !== null && finalStackInputs[s.id] !== undefined)
+				.map(s => cashOutSeat({ seatId: s.id, finalStack: finalStackInputs[s.id]! }));
+			await Promise.all(cashOutPromises);
 			await closeSession(session.id);
 			// Realtime session subscription will redirect all clients to /end
 			endSessionSheetOpen = false;
@@ -164,7 +180,7 @@
 			<Button
 				variant="danger"
 				class="w-full"
-				onclick={() => { endSessionSheetOpen = true; }}
+				onclick={openEndSessionSheet}
 			>
 				End Session
 			</Button>
@@ -208,16 +224,20 @@
 				{uncashedOutSeats.length === 1
 					? `${uncashedOutSeats[0].players.name} hasn't cashed out yet.`
 					: `${uncashedOutSeats.length} players haven't cashed out yet.`}
-				Their final stacks will be treated as their current stack (or 0 if unknown).
+				Enter their final stacks, or leave blank to settle at 0.
 			</p>
-			<ul class="text-sm text-text flex flex-col gap-1">
+			<div class="flex flex-col gap-3">
 				{#each uncashedOutSeats as seat (seat.id)}
-					<li class="flex items-center justify-between">
-						<span>{seat.players.name}</span>
-						<span class="text-text-muted tabular">{seat.stack ?? '—'} kr</span>
-					</li>
+					<div class="flex flex-col gap-1">
+						<label for="final-stack-{seat.id}" class="text-sm text-text font-medium">{seat.players.name}</label>
+						<NumberInput
+							id="final-stack-{seat.id}"
+							bind:value={finalStackInputs[seat.id]}
+							placeholder="Final stack (kr)"
+						/>
+					</div>
 				{/each}
-			</ul>
+			</div>
 		{:else}
 			<p class="text-text-muted text-sm">All players have cashed out. Ready to close the session.</p>
 		{/if}
