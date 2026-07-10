@@ -16,7 +16,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-!.env.test
+# .env.test and .env.e2etest contain service_role key — keep out of version control
 
 # Vite
 vite.config.js.timestamp-*

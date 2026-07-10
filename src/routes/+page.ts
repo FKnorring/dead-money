@@ -10,7 +10,7 @@ export const load: PageLoad = async () => {
 		.in('state', ['lobby', 'active'])
 		.order('created_at', { ascending: false })
 		.limit(1)
-		.single();
+		.maybeSingle();
 
 	if (active) {
 		redirect(307, `/session/${active.id}`);
