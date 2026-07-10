@@ -2,7 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { supabase, loadBuyInTotals, loadSeats } from '$lib';
 	import { getMyPlayerId, isHost as getIsHost } from '$lib';
-	import { useSessionSync } from '$lib';
+	import { useSessionSync, cashOutSeat } from '$lib';
+	import { Sheet, NumberInput } from '$lib';
 	import type { SeatWithPlayer } from '$lib';
 	import type { PageData } from './$types';
 	import MySession from './MySession.svelte';
@@ -38,6 +39,11 @@
 
 	// Active tab
 	let activeTab = $state<'my-session' | 'the-table'>('my-session');
+
+	// End-of-session prompt sheet
+	let endPromptOpen = $state(false);
+	let endPromptAmount = $state<number | null>(null);
+	let submittingEndPrompt = $state(false);
 
 	// ── Init from localStorage ─────────────────────────────────────────────────
 
@@ -75,7 +81,12 @@
 				(payload) => {
 					session = { ...session, ...payload.new };
 					if (payload.new.state === 'closed') {
-						goto(`/session/${session.id}/end`);
+						if (mySeat && !mySeat.cashed_out) {
+							endPromptAmount = mySeat.stack ?? null;
+							endPromptOpen = true;
+						} else {
+							goto(`/session/${session.id}/end`);
+						}
 					} else if (payload.new.state !== 'active') {
 						goto(`/session/${session.id}`);
 					}
@@ -111,6 +122,23 @@
 	async function handleCashOut() {
 		await handleChange();
 		activeTab = 'the-table';
+	}
+
+	async function handleEndPromptConfirm() {
+		if (endPromptAmount === null || submittingEndPrompt || !mySeat) return;
+		submittingEndPrompt = true;
+		try {
+			await cashOutSeat({ seatId: mySeat.id, finalStack: endPromptAmount });
+		} finally {
+			submittingEndPrompt = false;
+			endPromptOpen = false;
+			goto(`/session/${session.id}/end`);
+		}
+	}
+
+	function handleEndPromptSkip() {
+		endPromptOpen = false;
+		goto(`/session/${session.id}/end`);
 	}
 </script>
 
@@ -233,3 +261,27 @@
 		</button>
 	</nav>
 </div>
+
+<Sheet bind:open={endPromptOpen} title="Game over">
+	<div class="flex flex-col gap-3">
+		<p class="text-text-muted text-sm">
+			The host has ended the session. Enter your final stack to lock in your result.
+		</p>
+		<NumberInput bind:value={endPromptAmount} placeholder="Final stack (kr)" />
+	</div>
+	{#snippet footer()}
+		<div class="flex gap-3">
+			<button
+				class="flex-1 h-tap rounded-sm bg-surface-high text-text-muted text-sm font-medium"
+				onclick={handleEndPromptSkip}
+			>Skip</button>
+			<button
+				class="flex-1 h-tap rounded-sm bg-green text-text text-sm font-semibold disabled:opacity-40"
+				disabled={endPromptAmount === null || submittingEndPrompt}
+				onclick={handleEndPromptConfirm}
+			>
+				{submittingEndPrompt ? 'Saving…' : 'Lock In'}
+			</button>
+		</div>
+	{/snippet}
+</Sheet>
