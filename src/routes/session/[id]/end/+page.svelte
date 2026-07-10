@@ -30,7 +30,7 @@
 
 	// Keep seats live (players may still be filling in stacks)
 	$effect(() => {
-		const sync = useSessionSync(session.id, seats, (fresh) => { seats = fresh; });
+		const sync = useSessionSync(session.id, (fresh) => { seats = fresh; });
 		return () => sync.destroy();
 	});
 

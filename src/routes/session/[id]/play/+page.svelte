@@ -59,7 +59,7 @@
 	// ── Realtime subscriptions ─────────────────────────────────────────────────
 
 	$effect(() => {
-		const sync = useSessionSync(session.id, seats, (fresh) => { seats = fresh; });
+		const sync = useSessionSync(session.id, (fresh) => { seats = fresh; });
 
 		const buyInsChannel = supabase
 			.channel(`play:buy_ins:${session.id}`)
