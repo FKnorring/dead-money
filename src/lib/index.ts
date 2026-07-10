@@ -8,6 +8,8 @@ export { default as PlayerRow } from './components/ui/PlayerRow.svelte';
 export { default as Sheet } from './components/ui/Sheet.svelte';
 
 // Domain utilities
+export { buildChart, nearestPoint } from './stackChart';
+export type { ChartPoint, ChartData } from './stackChart';
 export { calculateSettlement } from './settlement';
 export { calculateNet } from './net';
 export { calculateAwards } from './awards';
